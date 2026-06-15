@@ -1034,8 +1034,11 @@ function renderProgress() {
   }
 
   if (done === 0) document.getElementById('progressNote').textContent = 'เริ่มเดินตรวจได้เลย';
-  else if (done === total) document.getElementById('progressNote').textContent = '✅ ครบทุกจุดแล้ว';
-  else document.getElementById('progressNote').textContent = 'เหลืออีก ' + (total - done) + ' จุด';
+  else if (done === total && total > 0) {
+    document.getElementById('progressNote').textContent = '🏁 เดินครบทุกจุด — ระบบจบกะให้อัตโนมัติ';
+    if (!window.__notifiedComplete) { window.__notifiedComplete = true; try { showToast('🏁 เดินครบทุกจุดแล้ว — ระบบจบกะ + ส่งรายงานให้อัตโนมัติ', 'success'); } catch (e) {} }
+  }
+  else { window.__notifiedComplete = false; document.getElementById('progressNote').textContent = 'เหลืออีก ' + (total - done) + ' จุด'; }
 
   // F1: Force complete all checkpoints before allowing End Patrol
   const endBtn = document.getElementById('endPatrolBtn');
