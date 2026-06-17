@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>BKKIN Security — Manager Dashboard</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root{--navy:#1A1A2E;--teal:#1abc9c;--teal-d:#0f8c74;--bg:#eef0f4;--card:#fff;--line:#e6e8ef;--txt:#23252f;--mut:#8b8fa3;--amber:#f39c12;--red:#e74c3c;--green:#2ecc71;--blue:#3a7afe;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;font-family:'Segoe UI','Sukhumvit Set','Noto Sans Thai',system-ui,sans-serif;}
+  body{background:var(--bg);color:var(--txt);padding-bottom:30px;}
+  .top{position:sticky;top:0;z-index:20;background:var(--navy);color:#fff;padding:13px 16px;display:flex;align-items:center;gap:11px;box-shadow:0 2px 10px rgba(0,0,0,.15);}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-d));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .ttl{font-weight:700;font-size:15px;line-height:1.1;} .tsub{font-size:11px;color:#9a9ec0;}
+  .rl{margin-left:auto;background:#2c2c47;color:#fff;font-size:12px;font-weight:600;padding:7px 12px;border-radius:20px;border:none;cursor:pointer;}
+  .tabs{position:sticky;top:60px;z-index:19;background:#fff;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;scrollbar-width:none;} .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto;padding:13px 15px;font-size:13.5px;font-weight:600;color:var(--mut);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;} .tab.on{color:var(--navy);border-bottom-color:var(--teal);}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px;} .page{display:none;} .page.on{display:block;}
+  .sechead{font-size:13px;font-weight:700;color:var(--mut);margin:16px 2px 10px;display:flex;align-items:center;} .sechead:first-child{margin-top:2px;}
+  .sechead .add{margin-left:auto;background:var(--teal);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:9px;border:none;cursor:pointer;}
+  .kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;position:relative;} .kpi .ic{position:absolute;top:12px;right:12px;font-size:17px;opacity:.85;} .kpi .lab{font-size:11.5px;color:var(--mut);font-weight:600;} .kpi .val{font-size:23px;font-weight:800;margin-top:6px;} .kpi .sub{font-size:11px;color:var(--mut);margin-top:2px;} .kpi.acc{border-top:3px solid var(--teal);} .pct{color:var(--green);font-weight:700;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;margin-bottom:14px;} .cb{padding:6px 16px 14px;}
+  .g{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f1f2f6;} .g:last-child{border-bottom:none;}
+  .gav{width:38px;height:38px;border-radius:11px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+  .gn{font-weight:600;font-size:13.5px;} .gm{font-size:11.5px;color:var(--mut);margin-top:2px;}
+  .gp{flex:1;min-width:50px;} .bar{height:7px;background:#eef0f5;border-radius:20px;overflow:hidden;} .bar>i{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,var(--teal),var(--teal-d));}
+  .gnum{font-size:12.5px;font-weight:700;width:46px;text-align:right;flex-shrink:0;}
+  .row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #f1f2f6;} .row:last-child{border-bottom:none;}
+  .rdate{width:54px;text-align:center;flex-shrink:0;} .rdate .d{font-size:17px;font-weight:800;line-height:1;} .rdate .m{font-size:10.5px;color:var(--mut);}
+  .rmid{flex:1;min-width:0;} .rmid .t{font-size:13.5px;font-weight:600;} .rmid .s{font-size:11.5px;color:var(--mut);margin-top:3px;}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:#eef0f5;color:#555;margin-left:6px;} .pill.red{background:#fdecea;color:#c0392b;} .pill.gr{background:#e8f9f1;color:#0f8c74;}
+  .cps{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px;margin-top:8px;}
+  .cp{aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;gap:2px;padding:2px;text-align:center;} .cp.ok{background:#e8f9f1;color:#0f8c74;border:1px solid #c7eddd;} .cp.miss{background:#fdecea;color:#c0392b;border:1px solid #f3c9c4;} .cp .tm{font-size:9px;font-weight:500;opacity:.8;}
+  .ann{background:#fff8f1;border:1px solid #f3d9af;border-radius:13px;padding:13px;margin-bottom:11px;} .annq{font-weight:700;font-size:13.5px;color:#7a5212;} .annmeta{font-size:11.5px;color:#b9770e;margin-top:5px;}
+  .who{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;} .chip{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;} .chip.ok{background:#e8f9f1;color:#0f8c74;} .chip.no{background:#fdecea;color:#c0392b;}
+  .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;} .btn{flex:1;min-width:80px;padding:9px;border-radius:10px;font-size:12.5px;font-weight:700;border:none;cursor:pointer;text-align:center;} .btn.p{background:var(--navy);color:#fff;} .btn.s{background:#eef0f5;color:#444;} .btn.w{background:#fff4e0;color:#b9770e;} .btn.r{background:#fdecea;color:#c0392b;}
+  .dstrip{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none;} .dstrip::-webkit-scrollbar{display:none;}
+  .dchip{flex:0 0 auto;padding:8px 12px;border-radius:11px;background:#fff;border:1px solid var(--line);text-align:center;cursor:pointer;} .dchip.on{background:var(--navy);color:#fff;border-color:var(--navy);} .dchip .dd{font-size:14px;font-weight:800;line-height:1;} .dchip .dm{font-size:10px;opacity:.8;margin-top:2px;}
+  .rng{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;} .rngb{padding:7px 13px;border-radius:20px;background:#fff;border:1px solid var(--line);font-size:12.5px;font-weight:600;cursor:pointer;color:var(--mut);} .rngb.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .tm{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid #f1f2f6;align-items:center;} .tm:last-child{border-bottom:none;}
+  .tmst{display:flex;gap:14px;margin-top:7px;flex-wrap:wrap;} .tmst div{font-size:11px;color:var(--mut);} .tmst b{color:var(--navy);font-weight:700;font-size:13px;display:block;}
+  .ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;border:1px solid var(--line);background:#fff;}
+  .cpl{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid #f1f2f6;} .cpl:last-child{border-bottom:none;}
+  .cpcode{width:46px;height:46px;border-radius:11px;background:#eef6ff;color:#2c6fd6;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;text-align:center;}
+  .ov{position:fixed;inset:0;background:rgba(20,22,40,.55);z-index:50;display:none;align-items:flex-end;justify-content:center;} .ov.on{display:flex;} .modal{background:#fff;width:100%;max-width:460px;border-radius:18px 18px 0 0;padding:18px;max-height:88vh;overflow:auto;}
+  @media(min-width:760px){.ov{align-items:center;} .modal{border-radius:18px;} .kpis{grid-template-columns:repeat(5,1fr);} .grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start;}}
+  .mh{font-size:16px;font-weight:700;margin-bottom:14px;} .fl{font-size:12px;color:var(--mut);font-weight:600;margin:11px 0 5px;} .fi{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fafbfc;} textarea.fi{min-height:74px;resize:vertical;}
+  .seg{display:flex;gap:7px;flex-wrap:wrap;} .sg{padding:8px 13px;border-radius:9px;background:#eef0f5;font-size:12.5px;font-weight:600;cursor:pointer;} .sg.on{background:var(--teal);color:#fff;}
+  .ckl{display:flex;flex-direction:column;gap:8px;} .ckl label{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:8px;border:1px solid var(--line);border-radius:9px;}
+  .gate{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;} .gate .ic{font-size:46px;margin-bottom:14px;} .gate h2{font-size:19px;margin-bottom:8px;} .gate p{color:var(--mut);font-size:14px;}
+  .empty{text-align:center;color:var(--mut);font-size:13px;padding:20px;} .note{font-size:11px;color:var(--mut);text-align:center;padding:14px;}
+</style>
+</head>
+<body>
+  <div id="app" style="display:none;">
+    <div class="top">
+      <div class="logo">🛡️</div>
+      <div><div class="ttl">BKKIN Security</div><div class="tsub">Manager Dashboard</div></div>
+      <button class="rl" onclick="loadAll(true)">↻ รีเฟรช</button>
+    </div>
+    <div class="tabs">
+      <div class="tab on" data-p="ov" onclick="go(this)">📊 ภาพรวม</div>
+      <div class="tab" data-p="rp" onclick="go(this)">📄 รายงาน</div>
+      <div class="tab" data-p="pt" onclick="go(this)">📍 การเดินตรวจ</div>
+      <div class="tab" data-p="cp" onclick="go(this)">🗺️ จุดตรวจ</div>
+      <div class="tab" data-p="tm" onclick="go(this)">👥 ทีมงาน</div>
+      <div class="tab" data-p="an" onclick="go(this)">📢 ประกาศ</div>
+    </div>
+    <div class="wrap">
+      <div class="page on" id="ov"></div>
+      <div class="page" id="rp"></div>
+      <div class="page" id="pt"></div>
+      <div class="page" id="cp"></div>
+      <div class="page" id="tm"></div>
+      <div class="page" id="an"></div>
+      <div class="note">ข้อมูลสดจากระบบ · อัปเดตล่าสุด <span id="upd">—</span></div>
+    </div>
+  </div>
+  <div id="gate" class="gate"><div class="ic">⏳</div><h2>กำลังเชื่อมต่อ...</h2><p>ตรวจสอบสิทธิ์ผู้จัดการ</p></div>
+  <div class="ov" id="modal" onclick="if(event.target===this)closeM()"><div class="modal" id="mbody"></div></div>
+
+<script>
+var GAS='https://script.google.com/macros/s/AKfycbzByjfISTCtjqKpirc9WXj1d8pIjeip5MfxJW8aP3upnsU8ies4cBoQly1cec25uOLv/exec';
+var LIFF_ID='2009859706-1aeiA65n';
+var UID='', DATA=null, CPSHIFT='night', RANGE=14, PT_DATE='';
+
+function api(action,params){ var qs='?action='+action+'&uid='+encodeURIComponent(UID); if(params){ for(var k in params){ if(params[k]!=null) qs+='&'+k+'='+encodeURIComponent(params[k]); } } return fetch(GAS+qs).then(function(r){return r.json();}); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ini(s){ s=String(s||'?').trim(); var p=s.split(' '); return ((p[0]||'?')[0]+((p[1]||'')[0]||'')).toUpperCase(); }
+function go(el){ document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');}); el.classList.add('on'); document.querySelectorAll('.page').forEach(function(p){p.classList.remove('on');}); document.getElementById(el.dataset.p).classList.add('on'); window.scrollTo(0,0); }
+function closeM(){ document.getElementById('modal').classList.remove('on'); }
+function openM(html){ document.getElementById('mbody').innerHTML=html; document.getElementById('modal').classList.add('on'); }
+
+async function boot(){
+  try{
+    await liff.init({liffId:LIFF_ID});
+    if(!liff.isLoggedIn()){ liff.login(); return; }
+    var pf=await liff.getProfile(); UID=pf.userId;
+    await loadAll();
+  }catch(e){ gate('⚠️','เชื่อมต่อไม่สำเร็จ', String(e)); }
+}
+function gate(ic,h,p){ document.getElementById('app').style.display='none'; document.getElementById('gate').style.display='flex'; document.getElementById('gate').innerHTML='<div class="ic">'+ic+'</div><h2>'+h+'</h2><p>'+(p||'')+'</p>'; }
+
+async function loadAll(refresh){
+  try{
+    if(refresh){ document.getElementById('upd').textContent='กำลังโหลด...'; }
+    var d=await api('mgrdata');
+    if(d&&d.error==='unauthorized'){ gate('🔒','เฉพาะผู้จัดการ','บัญชี LINE นี้ไม่มีสิทธิ์เข้าถึง Dashboard'); return; }
+    DATA=d; document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='block';
+    document.getElementById('upd').textContent=new Date().toLocaleTimeString('th-TH');
+    renderOv(); renderRp(); renderCp(); renderTm(); renderAn();
+    if(!PT_DATE){ PT_DATE=(DATA.reports&&DATA.reports[0])?DATA.reports[0].date:''; } renderPt();
+  }catch(e){ gate('⚠️','โหลดข้อมูลไม่สำเร็จ',String(e)); }
+}
+
+function renderOv(){
+  var o=DATA.overview||{}; var inc=o.totalIncidents!=null?o.totalIncidents:'-';
+  var cs=o.checkpointStatus||{}; var done=cs.done!=null?cs.done:'-'; var total=cs.total!=null?cs.total:'-';
+  var pct=(typeof done==='number'&&typeof total==='number'&&total)?Math.round(done/total*100):'-';
+  var pendAck=0; (DATA.announces||[]).forEach(function(a){ if(a.status==='active'){ pendAck+=a.targets.filter(function(t){return a.acked.indexOf(t.id)<0;}).length; } });
+  var act=(DATA.team||[]).length;
+  var h='<div class="kpis">'+
+    kpi('🕐','ยามที่บันทึกวันนี้',(o.todayCheckins!=null?o.todayCheckins:'-'),'รายการเช็กอิน',true)+
+    kpi('👥','ทีมทั้งหมด',act,'คน')+
+    kpi('📍','จุดตรวจวันนี้',done+'/'+total,(pct!=='-'?'<span class=pct>'+pct+'%</span>':''))+
+    kpi('⚠️','เหตุการณ์วันนี้',inc,'')+
+    kpi('📢','ค้างรับทราบ',pendAck,'คน')+'</div>';
+  document.getElementById('ov').innerHTML=h;
+}
+function kpi(ic,lab,val,sub,acc){ return '<div class="kpi'+(acc?' acc':'')+'"><span class="ic">'+ic+'</span><div class="lab">'+lab+'</div><div class="val">'+val+'</div><div class="sub">'+(sub||'')+'</div></div>'; }
+
+function renderRp(){
+  var reps=(DATA.reports||[]).slice(0,RANGE);
+  var rows=reps.map(function(r){ return '<div class="row"><div class="rdate"><div class="d">'+r.date.slice(8,10)+'</div><div class="m">'+thMonth(r.date)+'</div></div><div class="rmid"><div class="t">เดิน '+r.checkpoints+' จุด'+(r.incidents?'<span class="pill red">'+r.incidents+' เหตุ</span>':'<span class="pill gr">0 เหตุ</span>')+'</div><div class="s">'+r.date+'</div></div></div>'; }).join('')||'<div class="empty">ยังไม่มีข้อมูล</div>';
+  document.getElementById('rp').innerHTML='<div class="sechead">📄 รายงานสรุปประจำวัน</div>'+
+    '<div class="rng">'+rb('7 วัน',7)+rb('14 วัน',14)+rb('30 วัน',31)+'<div class="rngb" style="margin-left:auto;color:#0f8c74;border-color:#bfe9dd;" onclick="expRep()">⬇ Excel</div></div>'+
+    '<div class="card"><div class="cb">'+rows+'</div></div>';
+}
+function rb(lbl,n){ return '<div class="rngb'+(RANGE===n?' on':'')+'" onclick="RANGE='+n+';renderRp()">'+lbl+'</div>'; }
+
+function renderPt(){
+  var dates=(DATA.reports||[]).slice(0,14);
+  var strip=dates.map(function(r){ return '<div class="dchip'+(r.date===PT_DATE?' on':'')+'" onclick="PT_DATE=\''+r.date+'\';loadPt()"><div class="dd">'+r.date.slice(8,10)+'</div><div class="dm">'+thMonth(r.date)+'</div></div>'; }).join('');
+  document.getElementById('pt').innerHTML='<div class="sechead">📍 รายละเอียดการเดินตรวจ</div><div class="dstrip">'+strip+'</div><div id="ptbody"><div class="empty">เลือกวันที่</div></div>';
+  loadPt();
+}
+async function loadPt(){
+  document.querySelectorAll('#pt .dchip').forEach(function(d){d.classList.remove('on');});
+  document.querySelectorAll('#pt .dchip').forEach(function(d){ if(d.querySelector('.dd').textContent===PT_DATE.slice(8,10))d.classList.add('on'); });
+  var body=document.getElementById('ptbody'); if(!body)return; body.innerHTML='<div class="empty">กำลังโหลด...</div>';
+  var r=await api('mgrpatrol',{date:PT_DATE});
+  if(!r||!r.ok||!r.guards||!r.guards.length){ body.innerHTML='<div class="empty">ไม่มีการเดินตรวจในวันนี้</div>'; return; }
+  body.innerHTML=r.guards.map(function(g){
+    var cells=g.detail.map(function(c){ return '<div class="cp '+(c.done?'ok':'miss')+'">'+esc(c.code)+'<span class="tm">'+(c.done?(c.time||'✓'):'—')+'</span></div>'; }).join('');
+    return '<div class="card"><div class="cb"><div class="g" style="border:none;padding-bottom:4px;"><div class="gav">'+ini(g.name)+'</div><div style="flex:1;"><div class="gn">'+esc(g.name)+'</div><div class="gm">กะ'+shiftTh(g.shift)+'</div></div><div class="gnum">'+g.doneCount+'/'+g.total+'</div></div><div class="cps">'+cells+'</div></div></div>';
+  }).join('');
+}
+
+function renderCp(){
+  var cps=(DATA.checkpoints&&DATA.checkpoints[CPSHIFT])||[];
+  var rows=cps.map(function(c){ var code=c.id||c.code||''; var nm=c.name||''; var zone=c.zone||''; return '<div class="cpl"><div class="cpcode">'+esc(code)+'</div><div style="flex:1;min-width:0;"><div class="gn">'+esc(nm)+'</div><div class="gm">'+(zone?'โซน: '+esc(zone):'')+'</div></div><div class="ico" onclick="mCp(\''+esc(code)+'\')">✎</div><div class="ico" style="color:#c0392b" onclick="delCp(\''+esc(code)+'\')">🗑</div></div>'; }).join('')||'<div class="empty">ยังไม่มีจุดในกะนี้</div>';
+  var counts=DATA.checkpoints||{};
+  document.getElementById('cp').innerHTML='<div class="sechead">🗺️ จัดการจุดตรวจ <button class="add" onclick="mCp()">＋ เพิ่มจุด</button></div>'+
+    '<div class="rng">'+cpb('เช้า','morning',counts.morning)+cpb('บ่าย','afternoon',counts.afternoon)+cpb('ดึก','night',counts.night)+'</div>'+
+    '<div class="card"><div class="cb">'+rows+'</div></div>';
+}
+function cpb(lbl,id,arr){ var n=arr?arr.length:0; return '<div class="rngb'+(CPSHIFT===id?' on':'')+'" onclick="CPSHIFT=\''+id+'\';renderCp()">'+lbl+' ('+n+')</div>'; }
+
+function renderTm(){
+  var rows=(DATA.team||[]).map(function(g){ return '<div class="tm"><div class="gav">'+ini(g.name)+'</div><div style="flex:1;min-width:0;"><div class="gn">'+esc(g.name)+' <span class="pill">'+esc(g.code||'-')+'</span></div><div class="tmst"><div><b>'+g.days+'</b> วันทำงาน</div><div><b>'+g.avg+'</b> จุด/วัน</div></div></div><div class="ico" onclick="mTeam(\''+esc(g.id)+'\',\''+esc(g.name)+'\',\''+esc(g.code||'')+'\')">✎</div><div class="ico" style="color:#c0392b" onclick="delTeam(\''+esc(g.id)+'\',\''+esc(g.name)+'\')">🗑</div></div>'; }).join('')||'<div class="empty">ยังไม่มีรายชื่อ</div>';
+  document.getElementById('tm').innerHTML='<div class="sechead">👥 ทีมงาน <button class="add" onclick="alert(\'ยามใหม่: ให้สแกน QR เพิ่มเพื่อนบอท แล้วเปิดแอปเช็กอิน 1 ครั้ง ระบบจะเพิ่มให้อัตโนมัติ\')">＋ เพิ่มยาม</button></div>'+
+    '<div class="rng"><div class="rngb on">ทั้งหมด '+(DATA.team||[]).length+' คน</div><div class="rngb" style="margin-left:auto;color:#0f8c74;border-color:#bfe9dd;" onclick="expTeam()">⬇ Export Excel</div></div>'+
+    '<div class="card"><div class="cb">'+rows+'</div></div>';
+}
+
+function renderAn(){
+  var rows=(DATA.announces||[]).map(function(a){
+    var active=a.status==='active'; var pend=a.targets.filter(function(t){return a.acked.indexOf(t.id)<0;});
+    var chips=a.targets.map(function(t){ var ok=a.acked.indexOf(t.id)>-1; return '<span class="chip '+(ok?'ok':'no')+'">'+(ok?'✓ ':'✗ ')+esc(t.name)+'</span>'; }).join('');
+    var acts=active?('<div class="acts"><button class="btn w" onclick="mAnn(\''+a.id+'\')">✎ แก้ไข</button><button class="btn p" onclick="annAct(\'mgrannremind\',\''+a.id+'\')">🔔 เตือนซ้ำ</button><button class="btn s" onclick="annAct(\'mgrannclose\',\''+a.id+'\')">✓ ปิด</button></div>'):'';
+    return '<div class="ann"'+(active?'':' style="background:#f3f5f8;border-color:#e2e5ec;"')+'><div class="annq"'+(active?'':' style="color:#555;"')+'>"'+esc(a.msg)+'"</div><div class="annmeta"'+(active?'':' style="color:#888;"')+'>รับทราบ '+a.acked.length+'/'+a.targets.length+(active?(' · ค้าง '+pend.length+' คน'):' · ปิดแล้ว')+'</div><div class="who">'+chips+'</div>'+acts+'</div>';
+  }).join('')||'<div class="empty">ยังไม่มีประกาศ</div>';
+  document.getElementById('an').innerHTML='<div class="sechead">📢 ประกาศ & สถานะรับทราบ</div>'+rows+'<div class="note">สร้างประกาศใหม่: พิมพ์ #ประกาศ ในแชท LINE</div>';
+}
+
+/* ===== edits ===== */
+function mTeam(id,name,code){ openM('<div class="mh">✎ แก้ไขยาม</div><div class="fl">ชื่อ</div><input id="f_n" class="fi" value="'+esc(name)+'"><div class="fl">เลขประจำตัว / รหัส</div><input id="f_c" class="fi" value="'+esc(code)+'"><div class="acts" style="margin-top:16px;"><button class="btn s" onclick="closeM()">ยกเลิก</button><button class="btn p" onclick="saveTeam(\''+id+'\')">บันทึก</button></div>'); }
+async function saveTeam(id){ var n=document.getElementById('f_n').value, c=document.getElementById('f_c').value; closeM(); var r=await api('mgrguardsave',{id:id,name:n,code:c}); if(r&&r.ok){ loadAll(); } else alert('บันทึกไม่สำเร็จ'); }
+async function delTeam(id,name){ if(!confirm('ลบ '+name+' ออกจากทีม?'))return; var r=await api('mgrguarddel',{id:id}); if(r&&r.ok)loadAll(); else alert('ลบไม่สำเร็จ'); }
+function mCp(code){ var ex=null; if(code){ ((DATA.checkpoints&&DATA.checkpoints[CPSHIFT])||[]).forEach(function(c){ if((c.id||c.code)===code)ex=c; }); } openM('<div class="mh">'+(code?'✎ แก้ไขจุด '+esc(code):'＋ เพิ่มจุดตรวจ')+'</div><div class="fl">รหัสจุด (เช่น CP13)</div><input id="f_code" class="fi" value="'+esc(code||'')+'"'+(code?' readonly':'')+'><div class="fl">ชื่อจุด</div><input id="f_nm" class="fi" value="'+esc(ex?ex.name:'')+'"><div class="fl">โซน / ชั้น</div><input id="f_z" class="fi" value="'+esc(ex?(ex.zone||''):'')+'"><div class="fl">อยู่ในกะ</div><input id="f_s" class="fi" value="'+esc(CPSHIFT)+'" placeholder="morning,afternoon,night"><div class="acts" style="margin-top:16px;"><button class="btn s" onclick="closeM()">ยกเลิก</button><button class="btn p" onclick="saveCp()">บันทึก</button></div>'); }
+async function saveCp(){ var code=document.getElementById('f_code').value.trim(); if(!code){alert('ใส่รหัสจุด');return;} var nm=document.getElementById('f_nm').value, z=document.getElementById('f_z').value, s=document.getElementById('f_s').value; closeM(); var r=await api('mgrcpsave',{code:code,name:nm,zone:z,shifts:s}); if(r&&r.ok)loadAll(); else alert('บันทึกไม่สำเร็จ'); }
+async function delCp(code){ if(!confirm('ลบจุด '+code+'?'))return; var r=await api('mgrcpdel',{code:code}); if(r&&r.ok)loadAll(); else alert('ลบไม่สำเร็จ'); }
+function mAnn(id){ var a=null; (DATA.announces||[]).forEach(function(x){if(x.id===id)a=x;}); if(!a)return; var checks=(DATA.team||[]).map(function(g){ var on=a.targets.some(function(t){return t.id===g.id;}); return '<label><input type="checkbox" class="ck" value="'+g.id+'"'+(on?' checked':'')+'> '+esc(g.name)+'</label>'; }).join(''); openM('<div class="mh">✎ แก้ไขประกาศ</div><div class="fl">ข้อความ</div><textarea id="f_msg" class="fi">'+esc(a.msg)+'</textarea><div class="fl">ผู้รับ</div><div class="ckl">'+checks+'</div><div class="fl">รอบเตือนซ้ำ (ชม.)</div><input id="f_rh" class="fi" value="2"><div class="fl">หมดอายุ (วัน)</div><input id="f_ed" class="fi" value="2"><div class="acts" style="margin-top:16px;"><button class="btn s" onclick="closeM()">ยกเลิก</button><button class="btn p" onclick="saveAnn(\''+id+'\')">บันทึก</button></div>'); }
+async function saveAnn(id){ var msg=document.getElementById('f_msg').value; var ids=[]; document.querySelectorAll('#mbody .ck:checked').forEach(function(c){ids.push(c.value);}); var rh=document.getElementById('f_rh').value, ed=document.getElementById('f_ed').value; closeM(); var r=await api('mgrannedit',{id:id,msg:msg,targets:ids.join(','),remindH:rh,expireD:ed}); if(r&&r.ok)loadAll(); else alert('บันทึกไม่สำเร็จ'); }
+async function annAct(action,id){ if(action==='mgrannclose'&&!confirm('ปิดประกาศนี้?'))return; var r=await api(action,{id:id}); if(r&&r.ok){ alert(action==='mgrannremind'?'ส่งเตือนซ้ำเข้ากลุ่มแล้ว':'เรียบร้อย'); loadAll(); } else alert('ไม่สำเร็จ'); }
+
+/* ===== export CSV ===== */
+function dl(name,csv){ var b=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}); var u=URL.createObjectURL(b); var a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
+function expRep(){ var rows=[['วันที่','จุดตรวจ','เหตุการณ์']]; (DATA.reports||[]).slice(0,RANGE).forEach(function(r){ rows.push([r.date,r.checkpoints,r.incidents]); }); dl('reports.csv', rows.map(function(r){return r.join(',');}).join('\n')); }
+function expTeam(){ var rows=[['ชื่อ','รหัส','วันทำงาน','จุดเฉลี่ยต่อวัน']]; (DATA.team||[]).forEach(function(g){ rows.push(['"'+g.name+'"',g.code||'',g.days,g.avg]); }); dl('team.csv', rows.map(function(r){return r.join(',');}).join('\n')); }
+
+function thMonth(d){ var m=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']; var i=parseInt(d.slice(5,7),10)-1; return m[i]||''; }
+function shiftTh(s){ return s==='morning'?'เช้า':s==='afternoon'?'บ่าย':s==='night'?'ดึก':s; }
+boot();
+</script>
+</body>
+</html>
