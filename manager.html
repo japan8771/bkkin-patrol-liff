@@ -108,7 +108,7 @@ async function loadAll(refresh){
   try{
     if(refresh){ document.getElementById('upd').textContent='กำลังโหลด...'; }
     var d=await api('mgrdata');
-    if(d&&d.error==='unauthorized'){ gate('🔒','เฉพาะผู้จัดการ','บัญชี LINE นี้ไม่มีสิทธิ์เข้าถึง Dashboard'); return; }
+    if(d&&d.error==='unauthorized'){ document.getElementById('app').style.display='none'; document.getElementById('gate').style.display='flex'; document.getElementById('gate').innerHTML='<div class="ic">🔒</div><h2>เฉพาะผู้จัดการ</h2><p>บัญชีนี้ยังไม่มีสิทธิ์ — ส่ง ID นี้ให้ผู้ดูแลเพื่อเปิดสิทธิ์</p><p style="font-size:12px;color:#888;margin-top:10px;">Your LINE ID:</p><p style="font-size:13px;font-weight:700;word-break:break-all;background:#f3f5f8;padding:12px;border-radius:10px;margin-top:6px;">'+UID+'</p><button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+UID+'\');this.textContent=\'คัดลอกแล้ว ✓\'" style="margin-top:12px;background:#1A1A2E;color:#fff;border:none;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:700;">📋 คัดลอก ID</button>'; return; }
     DATA=d; document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='block';
     document.getElementById('upd').textContent=new Date().toLocaleTimeString('th-TH');
     renderOv(); renderRp(); renderCp(); renderTm(); renderAn();
