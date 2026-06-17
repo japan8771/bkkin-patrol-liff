@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>BKKIN Security — Manager Dashboard</title>
-<!-- v1.0 -->
+<!-- v1.1 -->
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
@@ -67,6 +67,7 @@
       <div class="tab" data-p="pt" onclick="go(this)">📍 การเดินตรวจ</div>
       <div class="tab" data-p="cp" onclick="go(this)">🗺️ จุดตรวจ</div>
       <div class="tab" data-p="tm" onclick="go(this)">👥 ทีมงาน</div>
+      <div class="tab" data-p="ev" onclick="go(this)">🚗 งานจอง/อีเวนต์</div>
       <div class="tab" data-p="an" onclick="go(this)">📢 ประกาศ</div>
     </div>
     <div class="wrap">
@@ -75,6 +76,7 @@
       <div class="page" id="pt"></div>
       <div class="page" id="cp"></div>
       <div class="page" id="tm"></div>
+      <div class="page" id="ev"></div>
       <div class="page" id="an"></div>
       <div class="note">ข้อมูลสดจากระบบ · อัปเดตล่าสุด <span id="upd">—</span></div>
     </div>
@@ -86,6 +88,7 @@
 var GAS='https://script.google.com/macros/s/AKfycbzByjfISTCtjqKpirc9WXj1d8pIjeip5MfxJW8aP3upnsU8ies4cBoQly1cec25uOLv/exec';
 var LIFF_ID='2009859706-1aeiA65n';
 var UID='', DATA=null, CPSHIFT='night', RANGE=14, PT_DATE='';
+var EVDATA=null, EVFILTER='all';
 
 function api(action,params){ var qs='?action='+action+'&uid='+encodeURIComponent(UID); if(params){ for(var k in params){ if(params[k]!=null) qs+='&'+k+'='+encodeURIComponent(params[k]); } } return fetch(GAS+qs).then(function(r){return r.json();}); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -111,7 +114,7 @@ async function loadAll(refresh){
     if(d&&d.error==='unauthorized'){ document.getElementById('app').style.display='none'; document.getElementById('gate').style.display='flex'; document.getElementById('gate').innerHTML='<div class="ic">🔒</div><h2>เฉพาะผู้จัดการ</h2><p>บัญชีนี้ยังไม่มีสิทธิ์ — ส่ง ID นี้ให้ผู้ดูแลเพื่อเปิดสิทธิ์</p><p style="font-size:12px;color:#888;margin-top:10px;">Your LINE ID:</p><p style="font-size:13px;font-weight:700;word-break:break-all;background:#f3f5f8;padding:12px;border-radius:10px;margin-top:6px;">'+UID+'</p><button onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+UID+'\');this.textContent=\'คัดลอกแล้ว ✓\'" style="margin-top:12px;background:#1A1A2E;color:#fff;border:none;padding:11px 20px;border-radius:10px;font-size:14px;font-weight:700;">📋 คัดลอก ID</button>'; return; }
     DATA=d; document.getElementById('gate').style.display='none'; document.getElementById('app').style.display='block';
     document.getElementById('upd').textContent=new Date().toLocaleTimeString('th-TH');
-    renderOv(); renderRp(); renderCp(); renderTm(); renderAn();
+    renderOv(); renderRp(); renderCp(); renderTm(); renderAn(); loadEv();
     if(!PT_DATE){ PT_DATE=(DATA.reports&&DATA.reports[0])?DATA.reports[0].date:''; } renderPt();
   }catch(e){ gate('⚠️','โหลดข้อมูลไม่สำเร็จ',String(e)); }
 }
@@ -185,6 +188,55 @@ function renderAn(){
   }).join('')||'<div class="empty">ยังไม่มีประกาศ</div>';
   document.getElementById('an').innerHTML='<div class="sechead">📢 ประกาศ & สถานะรับทราบ</div>'+rows+'<div class="note">สร้างประกาศใหม่: พิมพ์ #ประกาศ ในแชท LINE</div>';
 }
+
+/* ===== events (จองรถ/อีเวนต์) ===== */
+var EV_TYPES={car:'🚗 จองรถ',event:'⭐ อีเวนต์/VIP',note:'📝 โน้ต'};
+function evTypeTh(t){ return EV_TYPES[t]||t||'-'; }
+function loadEv(){ api('mgrevents').then(function(r){ EVDATA=(r&&r.events)?r.events:[]; renderEv(); }).catch(function(){ EVDATA=[]; renderEv(); }); }
+function renderEv(){
+  var box=document.getElementById('ev'); if(!box)return;
+  if(EVDATA===null){ box.innerHTML='<div class="sechead">🚗 งานจองรถ & อีเวนต์</div><div class="empty">กำลังโหลด...</div>'; return; }
+  var list=EVDATA.slice().sort(function(a,b){ return (b.date+' '+(b.time||'')).localeCompare(a.date+' '+(a.time||'')); });
+  if(EVFILTER!=='all') list=list.filter(function(e){return e.type===EVFILTER;});
+  var cnt={all:EVDATA.length,car:0,event:0,note:0}; EVDATA.forEach(function(e){ if(cnt[e.type]!=null)cnt[e.type]++; });
+  var rows=list.map(function(e){
+    var badge=e.type==='car'?'🚗':e.type==='event'?'⭐':'📝';
+    var meta=[]; if(e.guestLevel)meta.push(esc(e.guestLevel)); if(e.parkingSpot)meta.push('🅿 '+esc(e.parkingSpot)); if(e.details)meta.push(esc(e.details));
+    return '<div class="row"><div class="rdate"><div class="d">'+esc((e.date||'').slice(8,10))+'</div><div class="m">'+thMonth(e.date||'')+'</div></div>'+
+      '<div class="rmid"><div class="t">'+badge+' '+esc(e.title||'(ไม่มีชื่อ)')+(e.time?'<span class="pill">'+esc(e.time)+'</span>':'')+'</div><div class="s">'+(meta.join(' · ')||'—')+'</div></div>'+
+      '<div class="ico" onclick="mEv(\''+esc(e.id)+'\')">✎</div><div class="ico" style="color:#c0392b" onclick="delEv(\''+esc(e.id)+'\')">🗑</div></div>';
+  }).join('')||'<div class="empty">ยังไม่มีงานในหมวดนี้</div>';
+  box.innerHTML='<div class="sechead">🚗 งานจองรถ & อีเวนต์</div>'+
+    '<div class="rng">'+evb('ทั้งหมด','all',cnt.all)+evb('จองรถ','car',cnt.car)+evb('อีเวนต์','event',cnt.event)+evb('โน้ต','note',cnt.note)+'</div>'+
+    '<div class="card"><div class="cb">'+rows+'</div></div>'+
+    '<div class="note">เพิ่มงานใหม่ทำผ่านแอป (เมนูจองรถ/อีเวนต์) หรือพิมพ์ในแชทบอท · หน้านี้ใช้ดู/แก้ไข/ลบ</div>';
+}
+function evb(lbl,id,n){ return '<div class="rngb'+(EVFILTER===id?' on':'')+'" onclick="EVFILTER=\''+id+'\';renderEv()">'+lbl+' ('+(n||0)+')</div>'; }
+function mEv(id){ var e=null; (EVDATA||[]).forEach(function(x){if(x.id===id)e=x;}); if(!e)return;
+  var seg=['car','event','note'].map(function(t){ return '<div class="sg'+(e.type===t?' on':'')+'" data-t="'+t+'" onclick="this.parentNode.querySelectorAll(\'.sg\').forEach(function(s){s.classList.remove(\'on\');});this.classList.add(\'on\');">'+evTypeTh(t)+'</div>'; }).join('');
+  openM('<div class="mh">✎ แก้ไขงาน</div>'+
+    '<div class="fl">ประเภท</div><div class="seg" id="ev_type">'+seg+'</div>'+
+    '<div class="fl">ชื่องาน</div><input id="ev_title" class="fi" value="'+esc(e.title||'')+'">'+
+    '<div class="fl">วันที่</div><input id="ev_date" class="fi" type="date" value="'+esc(e.date||'')+'">'+
+    '<div class="fl">เวลา</div><input id="ev_time" class="fi" type="time" value="'+esc(e.time||'')+'">'+
+    '<div class="fl">ระดับแขก / VIP</div><input id="ev_gl" class="fi" value="'+esc(e.guestLevel||'')+'">'+
+    '<div class="fl">จุดจอด</div><input id="ev_ps" class="fi" value="'+esc(e.parkingSpot||'')+'">'+
+    '<div class="fl">รายละเอียด</div><textarea id="ev_dt" class="fi">'+esc(e.details||'')+'</textarea>'+
+    '<div class="fl">เตือนล่วงหน้า (ชม.)</div><input id="ev_rh" class="fi" type="number" value="'+esc(e.reminderHours||3)+'">'+
+    '<div class="acts" style="margin-top:16px;"><button class="btn s" onclick="closeM()">ยกเลิก</button><button class="btn p" onclick="saveEv(\''+esc(id)+'\')">บันทึก</button></div>');
+}
+function saveEv(id){
+  var ev0=null; (EVDATA||[]).forEach(function(x){if(x.id===id)ev0=x;});
+  var typeEl=document.querySelector('#ev_type .sg.on'); var type=typeEl?typeEl.dataset.t:(ev0?ev0.type:'car');
+  var p={ eventId:id, type:type,
+    title:document.getElementById('ev_title').value, date:document.getElementById('ev_date').value,
+    time:document.getElementById('ev_time').value, guestLevel:document.getElementById('ev_gl').value,
+    parkingSpot:document.getElementById('ev_ps').value, details:document.getElementById('ev_dt').value,
+    reminderHours:document.getElementById('ev_rh').value, photoUrl:(ev0?ev0.photoUrl:'')||'' };
+  closeM();
+  api('mgreventsave',p).then(function(r){ if(r&&r.ok){ loadEv(); } else alert('บันทึกไม่สำเร็จ'); }).catch(function(){ alert('บันทึกไม่สำเร็จ'); });
+}
+function delEv(id){ if(!confirm('ลบงานนี้?'))return; api('mgreventdel',{eventId:id}).then(function(r){ if(r&&r.ok)loadEv(); else alert('ลบไม่สำเร็จ'); }).catch(function(){ alert('ลบไม่สำเร็จ'); }); }
 
 /* ===== edits ===== */
 function mTeam(id,name,code){ openM('<div class="mh">✎ แก้ไขยาม</div><div class="fl">ชื่อ</div><input id="f_n" class="fi" value="'+esc(name)+'"><div class="fl">เลขประจำตัว / รหัส</div><input id="f_c" class="fi" value="'+esc(code)+'"><div class="acts" style="margin-top:16px;"><button class="btn s" onclick="closeM()">ยกเลิก</button><button class="btn p" onclick="saveTeam(\''+id+'\')">บันทึก</button></div>'); }
