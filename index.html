@@ -364,7 +364,7 @@
 <!-- ============== Loader (initial) ============== -->
 <div class="full-loader" id="loader">
   <div class="spinner"></div>
-  <div class="msg" id="loaderMsg">กำลังเริ่มระบบ...</div>
+  <div class="msg" id="loaderMsg">กำลังเริ่มระบบ... <span style="opacity:.5;font-size:11px">build FLOW-2</span></div>
 </div>
 
 <!-- ============== Gate: Pending approval / not registered ============== -->
@@ -576,9 +576,9 @@
         <div class="thmbs" id="crCctvThumbs"></div>
         <label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="crPickCctv(this)"></label>
         <div class="recfl">ยืนยันสถานะ</div>
-        <label class="okrow"><input type="checkbox" id="crDvr" checked> DVR ทั้งหมด 9 ตัว ทำงานปกติ</label>
-        <label class="okrow"><input type="checkbox" id="crCam" checked> กล้องทั้งหมด 127 ตัว ทำงานปกติ</label>
-        <div class="recfl">รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)</div>
+        <label class="okrow"><input type="checkbox" id="crDvr" checked onchange="crCctvToggle()"> DVR ทั้งหมด 9 ตัว ทำงานปกติ</label>
+        <label class="okrow"><input type="checkbox" id="crCam" checked onchange="crCctvToggle()"> กล้องทั้งหมด 127 ตัว ทำงานปกติ</label>
+        <div class="recfl" id="crCctvNoteLbl">รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)</div>
         <textarea id="crCctvNote" class="recfi" style="min-height:54px;" placeholder="เช่น CAM-12 โซน B2 ดับ — แจ้งช่างแล้ว 23:40"></textarea>
       </div>
       <button id="crSubmitBtn" class="recbtn" onclick="crSubmit()">✅ ยืนยัน Control Room → เริ่มเดินตรวจ</button>
@@ -2416,10 +2416,19 @@ function crPickFire(inp){ _recPick(inp, CR_fire, 'crFireThumbs', 2); }
 function crPickElev(inp){ _recPick(inp, CR_elev, 'crElevThumbs', 1); }
 function crPickCctv(inp){ _recPick(inp, CR_cctv, 'crCctvThumbs', 1); }
 function crToggleLift(k,btn){ CR_elevSt[k]=!CR_elevSt[k]; btn.className='liftb '+(CR_elevSt[k]?'ok':'bad'); btn.querySelector('.lst').textContent=CR_elevSt[k]?'ปกติ':'เสีย'; }
+// CCTV: ติ๊กออก (ไม่ปกติ) → ไฮไลต์ช่องรายละเอียด + บังคับกรอก
+function crCctvToggle(){
+  var bad=(!document.getElementById('crDvr').checked)||(!document.getElementById('crCam').checked);
+  var lbl=document.getElementById('crCctvNoteLbl'), nt=document.getElementById('crCctvNote');
+  if(lbl){ lbl.style.color=bad?'#e74c3c':''; lbl.style.fontWeight=bad?'700':''; lbl.textContent=bad?'⚠️ ระบุรายละเอียด — กล้อง/DVR ตัวไหนเสีย และแจ้งช่างหรือยัง (จำเป็น)':'รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)'; }
+  if(nt){ nt.style.borderColor=bad?'#e74c3c':''; nt.style.background=bad?'#fff5f5':''; if(bad){ try{ nt.focus(); nt.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} } }
+}
 async function crSubmit(){
   if(CR_fire.length<2){ showToast('ถ่ายรูป Fire Alarm 2 รูป (ระบบ + Control Panel)','error'); return; }
   if(CR_elev.length<1){ showToast('ถ่ายรูประบบลิฟต์ 1 รูป','error'); return; }
   if(CR_cctv.length<1){ showToast('ถ่ายรูป CCTV 1 รูป','error'); return; }
+  var _cctvBad=(!document.getElementById('crDvr').checked)||(!document.getElementById('crCam').checked);
+  if(_cctvBad && !((document.getElementById('crCctvNote')||{}).value||'').trim()){ showToast('CCTV ไม่ปกติ — ต้องระบุรายละเอียด (กล้องตัวไหน / แจ้งช่างหรือยัง)','error'); var _nt=document.getElementById('crCctvNote'); if(_nt){_nt.style.borderColor='#e74c3c';_nt.focus();_nt.scrollIntoView({behavior:'smooth',block:'center'});} return; }
   var btn=document.getElementById('crSubmitBtn'); var _orig=btn.textContent; btn.disabled=true; btn.textContent='กำลังบันทึก...';
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
     fireTrouble:document.getElementById('crTrouble').value||0, fireDisable:document.getElementById('crDisable').value||0,
