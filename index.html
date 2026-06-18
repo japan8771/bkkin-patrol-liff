@@ -2407,11 +2407,8 @@ function handleDeepLink() {
       const t = document.querySelector('.tab[data-panel="history"]');
       if (t) t.click();
     } else if (tab === 'clockIn' || tab === 'clockin') {
-      // Auto-trigger Clock In if not yet clocked in
-      const card = document.getElementById('clockInCard');
-      if (card && card.style.display !== 'none') {
-        setTimeout(doClockIn, 500);
-      }
+      // เปิดหน้าเข้างานเฉพาะ (ตรงกับเมนูปัจจุบัน)
+      if (typeof showClockIn === 'function') setTimeout(showClockIn, 300);
     } else if (tab === 'endPatrol' || tab === 'endpatrol') {
       setTimeout(confirmEndPatrol, 500);
     }
@@ -2784,7 +2781,7 @@ function checkGps(){
     body.innerHTML=m;
   }, { enableHighAccuracy:true, timeout:10000, maximumAge:0 });
 }
-function routeTo(to){switch(String(to||'').toLowerCase()){case 'clockin':case 'patrol':openSection('patrol');break;case 'incident':openSection('incident');break;case 'handover':menuHandover();break;case 'gps':checkGps();break;case 'swap':showSwap();break;case 'history':case 'report':openSection('history');break;case 'handoverhist':showHandoverHist();break;case 'help':showHelp();break;case 'menu':showHomeMenu();break;case 'events':case 'calendar':showEvents();break;default:break;}}
+function routeTo(to){switch(String(to||'').toLowerCase()){case 'clockin':showClockIn();break;case 'patrol':openSection('patrol');break;case 'controlroom':case 'carpark':case 'contractor':openSection('patrol');break;case 'incident':openSection('incident');break;case 'handover':menuHandover();break;case 'gps':checkGps();break;case 'swap':showSwap();break;case 'history':case 'report':openSection('history');break;case 'handoverhist':showHandoverHist();break;case 'help':showHelp();break;case 'menu':showHomeMenu();break;case 'events':case 'calendar':showEvents();break;default:break;}}
 function _routeDeepLink(){var to=_qparam('to');if(to)routeTo(to);}
 
 // ===== EVENTS / ปฏิทินงาน =====
