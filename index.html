@@ -598,6 +598,7 @@
     <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">👷 Contractor Report</div><div class="subs">ผู้รับเหมาเข้าทำงาน · เพิ่มได้หลายราย</div></div></div>
     <div style="padding:14px;">
       <div id="coList"></div>
+      <button class="recbtn" style="background:#5a6172;margin-bottom:12px;" onclick="coConfirmNone()">✓ วันนี้ไม่มีผู้รับเหมาเข้าทำงาน</button>
       <div class="reccard">
         <div class="recttl">➕ เพิ่มผู้รับเหมา</div>
         <div class="recfl">บริษัท</div><input id="coCompany" class="recfi" placeholder="ชื่อบริษัท">
@@ -2072,6 +2073,13 @@ async function confirmEndPatrol() {
     showToast('ยังตรวจไม่ครบ — เหลืออีก ' + (totalCp - doneCp) + ' จุด', 'error');
     return;
   }
+  // บังคับ: ต้องบันทึก Car Park + Contractor ก่อนจบกะ
+  try {
+    var _cpr = await api('getCarParkToday', { shift: _shiftId() });
+    if (!(_cpr && _cpr.records && _cpr.records.length)) { showToast('🅿️ บันทึก Car Park ก่อนจบกะ', 'error'); showCarPark(); return; }
+    var _cor = await api('getContractorsToday', { shift: _shiftId() });
+    if (!(_cor && _cor.contractors && _cor.contractors.length)) { showToast('👷 บันทึก Contractor หรือกดยืนยันไม่มีผู้รับเหมา ก่อนจบกะ', 'error'); showContractor(); return; }
+  } catch (e) {}
   if (!confirm('ยืนยันจบกะและส่งรายงานให้ Manager?\n\nรายงานจะถูกสร้างเป็น PDF พร้อมรูปทุกจุด')) return;
   // ถามฝากกะก่อน (โหมดจบกะ)
   handoverMode = 'endshift';
@@ -2082,7 +2090,7 @@ async function doEndPatrol() {
   document.getElementById('endPatrolBtn').textContent = '⏳ กำลังสร้างรายงาน PDF...';
   document.getElementById('endPatrolBtn').disabled = true;
   try {
-    const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName }, true);
+    const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName, shift: _shiftId() }, true);
     if (r.success) {
       document.getElementById('endPatrolBtn').style.display = 'none';
       document.getElementById('reportedCard').style.display = 'block';
@@ -2350,9 +2358,15 @@ async function cpSubmit(){
 /* Contractor */
 function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
 function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 3); }
+async function coConfirmNone(){
+  if(!confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?'))return;
+  try{ var r=await api('saveContractor',{userId:_uid(),userName:_uname(),shift:_shiftId(),company:'(ไม่มีผู้รับเหมา)',people:0,workStart:'',workEnd:'',area:'',detail:'',ackBy:_uname(),photos:[]},true);
+    if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีผู้รับเหมาแล้ว','success'); coLoad(); } else showToast('บันทึกไม่สำเร็จ','error');
+  }catch(e){ showToast('ผิดพลาด','error'); }
+}
 async function coLoad(){
   try{ var r=await api('getContractorsToday',{shift:_shiftId()}); var list=document.getElementById('coList'); var arr=(r&&r.contractors)||[];
-    list.innerHTML = arr.length ? arr.map(function(c){ return '<div class="cocard"><b>'+_esc(c.company)+' · '+_esc(c.people)+' คน</b><div class="com">⏰ '+_esc(c.workStart)+'–'+_esc(c.workEnd)+' · 📍 '+_esc(c.area)+'<br>🔧 '+_esc(c.detail)+'<br>✔️ '+_esc(c.ackBy)+'</div></div>'; }).join('') : '<div class="coempty">ยังไม่มีผู้รับเหมาในกะนี้</div>';
+    list.innerHTML = arr.length ? arr.map(function(c){ if(String(c.company).indexOf('ไม่มีผู้รับเหมา')>-1){ return '<div class="cocard" style="border-color:#bfe9dd;background:#f0fbf6;"><b style="color:#0f8c74;">✓ ยืนยันแล้ว: ไม่มีผู้รับเหมาเข้าทำงานในกะนี้</b></div>'; } return '<div class="cocard"><b>'+_esc(c.company)+' · '+_esc(c.people)+' คน</b><div class="com">⏰ '+_esc(c.workStart)+'–'+_esc(c.workEnd)+' · 📍 '+_esc(c.area)+'<br>🔧 '+_esc(c.detail)+'<br>✔️ '+_esc(c.ackBy)+'</div></div>'; }).join('') : '<div class="coempty">ยังไม่มีผู้รับเหมาในกะนี้</div>';
   }catch(e){}
 }
 async function coSubmit(){
