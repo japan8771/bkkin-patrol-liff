@@ -399,7 +399,7 @@
   <div id="homeMenu" style="display:block;">
     <div class="msec">1 · เริ่ม / ระหว่างกะ</div>
     <div class="mgrid">
-      <button class="mtile" onclick="openSection('patrol')"><span class="mic">🕐</span><span class="mlb">เข้างาน</span><span class="mds">บันทึกเวลาเริ่มกะ</span></button>
+      <button class="mtile" onclick="goClockIn()"><span class="mic">🕐</span><span class="mlb">เข้างาน</span><span class="mds">เลือกกะ + บันทึกเวลาเริ่มกะ</span></button>
       <button class="mtile" onclick="goPatrol()"><span class="mic">📷</span><span class="mlb">เดินตรวจ</span><span class="mds">ถ่ายรูป + ติ๊กตามจุด</span></button>
       <button class="mtile malert" onclick="openSection('incident')"><span class="mic">🚨</span><span class="mlb">แจ้งเหตุ</span><span class="mds">รายงานเหตุผิดปกติ</span></button>
       <button class="mtile" onclick="menuHandover()"><span class="mic">📝</span><span class="mlb">มอบกะ</span><span class="mds">ฝากโน้ตให้กะถัดไป</span></button>
@@ -1831,7 +1831,7 @@ async function initClockIn() {
     const r = await api('getTodayAttendance', { userId: userProfile.userId });
     if (r.clockedIn) { if (r.shift) await setActiveShift(r.shift); showClockedIn(r.clockInTime); }
     else showClockInButton();
-  } catch (e) { console.error('clockIn check failed:', e); }
+  } catch (e) { console.error('clockIn check failed:', e); try { showClockInButton(); } catch (_e) {} }
 }
 
 function showClockInButton() {
@@ -1875,6 +1875,12 @@ function showClockInButton() {
   document.getElementById('clockInBtn').onclick = doClockIn;
 }
 
+function goClockIn(){
+  // กด "เข้างาน" → เปิดหน้าเลือกกะ + ปุ่มบันทึกเข้างานเสมอ (เข้าใหม่/เปลี่ยนกะได้ แม้เข้างานแล้ว)
+  openSection('patrol');
+  try { reopenClockIn(); } catch(e) { try { showClockInButton(); } catch(_e) {} }
+  try { var c = document.getElementById('clockInCard'); if (c) c.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e) {}
+}
 function showClockedIn(isoTime) {
   const t = new Date(isoTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
   document.getElementById('clockInCard').style.display = 'none';
