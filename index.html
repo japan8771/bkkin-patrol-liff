@@ -1535,7 +1535,7 @@ async function handleCheckinPhoto(event) {
   const files = Array.from(event.target.files || []);
   for (const file of files) {
     if (checkinPhotos.length >= 10) break;
-    const data = await resizeImage(file, 1280, 0.8);
+    const data = await resizeImage(file, 1280, 0.8, event.target.hasAttribute('capture'));
     checkinPhotos.push(data);
   }
   event.target.value = '';
@@ -1548,7 +1548,7 @@ async function handleIncPhoto(event) {
   const files = Array.from(event.target.files || []);
   for (const file of files) {
     if (incPhotos.length >= 10) break;
-    const data = await resizeImage(file, 1280, 0.8);
+    const data = await resizeImage(file, 1280, 0.8, event.target.hasAttribute('capture'));
     incPhotos.push(data);
   }
   event.target.value = '';
@@ -1571,7 +1571,25 @@ function removeIncPhoto(idx) {
   renderIncPhotos();
 }
 
-function resizeImage(file, maxSize, quality) {
+function _stampTime(ctx, w, h) {
+  try {
+    var d = new Date();
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    var label = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'  '+p(d.getHours())+':'+p(d.getMinutes());
+    var fs = Math.max(13, Math.round(w * 0.040));
+    ctx.font = '700 ' + fs + 'px Arial, sans-serif';
+    ctx.textBaseline = 'top';
+    var pad = Math.round(fs * 0.42);
+    var tw = ctx.measureText(label).width;
+    var bw = tw + pad * 2, bh = fs + pad * 2;
+    var bx = w - bw - Math.round(fs*0.4), by = h - bh - Math.round(fs*0.4);
+    ctx.fillStyle = 'rgba(0,0,0,0.58)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = '#FFD54A';
+    ctx.fillText(label, bx + pad, by + pad);
+  } catch (e) {}
+}
+function resizeImage(file, maxSize, quality, stamp) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -1584,6 +1602,7 @@ function resizeImage(file, maxSize, quality) {
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
+        if (stamp) _stampTime(ctx, w, h);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
       img.onerror = reject;
@@ -2215,7 +2234,7 @@ async function handleIncEditPhotoPick(event) {
   const files = Array.from(event.target.files || []);
   for (const file of files) {
     if (incEditPhotos.length >= 10) break;
-    const data = await resizeImage(file, 1280, 0.8);
+    const data = await resizeImage(file, 1280, 0.8, event.target.hasAttribute('capture'));
     incEditPhotos.push(data);
   }
   event.target.value = '';
@@ -2289,7 +2308,7 @@ async function goPatrol(){
 }
 async function _recPick(inp, arr, thumbId, max){
   var files=Array.prototype.slice.call(inp.files||[]);
-  for(var i=0;i<files.length && arr.length<max;i++){ try{ var d=await resizeImage(files[i],1280,0.7); arr.push(d); }catch(e){} }
+  for(var i=0;i<files.length && arr.length<max;i++){ try{ var d=await resizeImage(files[i],1280,0.7, inp.hasAttribute('capture')); arr.push(d); }catch(e){} }
   inp.value=''; _renderThumbs(arr, thumbId);
 }
 function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
