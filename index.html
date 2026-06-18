@@ -407,9 +407,7 @@
       <button class="mtile" onclick="showSwap()"><span class="mic">🔄</span><span class="mlb">เปลี่ยนกะ</span><span class="mds">ขอสลับ/เปลี่ยนกะ</span></button>
     </div>
     <div class="mgrid" style="margin-top:11px;">
-      <button class="mtile" onclick="showControlRoom()"><span class="mnew">ใหม่</span><span class="mic">🏢</span><span class="mlb">Control Room</span><span class="mds">ตรวจ Fire/Lift/CCTV (บังคับ)</span></button>
-      <button class="mtile" onclick="showCarPark()"><span class="mnew">ใหม่</span><span class="mic">🅿️</span><span class="mlb">Car Park</span><span class="mds">บันทึกจำนวนรถ</span></button>
-      <button class="mtile" onclick="showContractor()"><span class="mnew">ใหม่</span><span class="mic">👷</span><span class="mlb">Contractor</span><span class="mds">ผู้รับเหมาเข้างาน</span></button>
+      <!-- Control Room / Car Park / Contractor ย้ายไปรวมในชุดเดินตรวจแล้ว (ไม่มีไทล์แยก) -->
     </div>
     <div class="mgrid" style="margin-top:11px;">
       <button class="mtile mfull" onclick="showEvents()"><span class="mnew">ใหม่</span><span class="mic">📅</span><span class="mtxt"><span class="mlb">ปฏิทินงาน / Events</span><span class="mds">ตารางงานทีม · จองรถ · แขก VIP · แจ้งเตือน LINE</span></span></button>
@@ -443,7 +441,7 @@
     </div>
   </div>
   <div id="handoverHistScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🗒️ ประวัติมอบกะ</div><div class="subs">ดูย้อนหลังตามวัน &amp; รอบกะ</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">🗒️ ประวัติมอบกะ</div><div class="subs">ดูย้อนหลังตามวัน &amp; รอบกะ</div></div></div>
     <div class="hh-datebar"><button onclick="hhChDay(-1)">‹</button><div class="hh-d" id="hhDateLabel">-</div><button onclick="hhChDay(1)">›</button><button class="hh-today" onclick="hhToday()">วันนี้</button></div>
     <div class="hh-tabs" id="hhTabs">
       <button class="hhtab on" data-s="all" onclick="hhSetShift('all')">ทั้งหมด</button>
@@ -454,7 +452,7 @@
     <div id="hhList" class="hh-list"></div>
   </div>
   <div id="swapScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🔄 เปลี่ยนกะ</div><div class="subs">ส่งคำขอถึงผู้จัดการ</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">🔄 เปลี่ยนกะ</div><div class="subs">ส่งคำขอถึงผู้จัดการ</div></div></div>
     <div style="padding:16px;">
       <div class="sw-card"><div class="sw-lbl">📅 วันที่</div><input id="swDate" type="text" readonly></div>
       <div class="sw-card"><div class="sw-lbl">กะปัจจุบัน</div><div id="swFrom" class="sw-from">-</div></div>
@@ -544,7 +542,7 @@
   </style>
 
   <div id="crScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🏢 Control Room</div><div class="subs">บังคับ · ตรวจ Fire / Lift / CCTV ก่อนเดินตรวจ</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">🏢 Control Room</div><div class="subs">บังคับ · ตรวจ Fire / Lift / CCTV ก่อนเดินตรวจ</div></div></div>
     <div style="padding:14px;">
       <div class="reccard">
         <div class="recttl">🔥 Fire Alarm<span class="recpill">บังคับ</span></div>
@@ -552,8 +550,8 @@
         <div class="thmbs" id="crFireThumbs"></div>
         <label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="crPickFire(this)"></label>
         <div class="recnum">
-          <div style="flex:1;"><div class="recfl">Trouble Point</div><input id="crTrouble" class="recfi" type="number" value="0"></div>
-          <div style="flex:1;"><div class="recfl">Disable Point</div><input id="crDisable" class="recfi" type="number" value="0"></div>
+          <div style="flex:1;"><div class="recfl">Trouble Point</div><input id="crTrouble" class="recfi" type="number" value="0" oninput="crScheduleSave()"></div>
+          <div style="flex:1;"><div class="recfl">Disable Point</div><input id="crDisable" class="recfi" type="number" value="0" oninput="crScheduleSave()"></div>
         </div>
       </div>
       <div class="reccard">
@@ -579,25 +577,27 @@
         <label class="okrow"><input type="checkbox" id="crDvr" checked onchange="crCctvToggle()"> DVR ทั้งหมด 9 ตัว ทำงานปกติ</label>
         <label class="okrow"><input type="checkbox" id="crCam" checked onchange="crCctvToggle()"> กล้องทั้งหมด 127 ตัว ทำงานปกติ</label>
         <div class="recfl" id="crCctvNoteLbl">รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)</div>
-        <textarea id="crCctvNote" class="recfi" style="min-height:54px;" placeholder="เช่น CAM-12 โซน B2 ดับ — แจ้งช่างแล้ว 23:40"></textarea>
+        <textarea id="crCctvNote" class="recfi" style="min-height:54px;" placeholder="เช่น CAM-12 โซน B2 ดับ — แจ้งช่างแล้ว 23:40" oninput="crScheduleSave()"></textarea>
       </div>
-      <button id="crSubmitBtn" class="recbtn" onclick="crSubmit()">✅ ยืนยัน Control Room → เริ่มเดินตรวจ</button>
+      <div id="crSaveInd" style="text-align:center;font-size:12px;color:#27ae60;font-weight:700;margin:10px 0 4px;">💾 บันทึกอัตโนมัติ</div>
+      <button class="recbtn" onclick="advanceFlow()">✓ เสร็จ — กลับไปลิสต์เดินตรวจ</button>
     </div>
   </div>
 
   <div id="cpScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🅿️ Car Park Record</div><div class="subs">บันทึกจำนวนรถ · กรอกได้ตลอดกะ</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">🅿️ Car Park Record</div><div class="subs">บันทึกจำนวนรถ · กรอกได้ตลอดกะ</div></div></div>
     <div style="padding:14px;">
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🚗 รถยนต์รอบอาคาร</div><div style="font-size:11px;color:#888;">Cars around building</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpAround',-1)">−</button><div class="sval2" id="cpAround">0</div><button class="sbtn2 p" onclick="cpStep('cpAround',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🛗 รถในลิฟต์จอดรถ</div><div style="font-size:11px;color:#888;">Cars in parking lift</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpLift',-1)">−</button><div class="sval2" id="cpLift">0</div><button class="sbtn2 p" onclick="cpStep('cpLift',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🏍️ มอเตอร์ไซค์</div><div style="font-size:11px;color:#888;">Motorcycles</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpMoto',-1)">−</button><div class="sval2" id="cpMoto">0</div><button class="sbtn2 p" onclick="cpStep('cpMoto',1)">+</button></div></div>
       <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="cpPick(this)"></label></div>
-      <button id="cpSubmitBtn" class="recbtn" onclick="cpSubmit()">💾 บันทึก Car Park</button>
+      <div id="cpSaveInd" style="text-align:center;font-size:12px;color:#27ae60;font-weight:700;margin:10px 0 4px;">💾 บันทึกอัตโนมัติ</div>
+      <button class="recbtn" onclick="advanceFlow()">✓ เสร็จ — กลับไปลิสต์เดินตรวจ</button>
     </div>
   </div>
 
   <div id="coScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">👷 Contractor Report</div><div class="subs">ผู้รับเหมาเข้าทำงาน · เพิ่มได้หลายราย</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">👷 Contractor Report</div><div class="subs">ผู้รับเหมาเข้าทำงาน · เพิ่มได้หลายราย</div></div></div>
     <div style="padding:14px;">
       <div id="coList"></div>
       <button class="recbtn" style="background:#5a6172;margin-bottom:12px;" onclick="coConfirmNone()">✓ วันนี้ไม่มีผู้รับเหมาเข้าทำงาน</button>
@@ -616,7 +616,7 @@
   </div>
 
   <div id="eventsScreen" style="display:none;">
-    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">📅 ปฏิทินงาน</div><div class="subs">ตารางงาน · อีเวนต์ · แขก VIP</div></div></div>
+    <div class="subhdr"><button class="subback" onclick="advanceFlow()">‹</button><div><div class="subt">📅 ปฏิทินงาน</div><div class="subs">ตารางงาน · อีเวนต์ · แขก VIP</div></div></div>
     <div class="ev-views" id="evViews">
       <button class="evv on" data-v="day" onclick="evSetView('day')">วัน</button>
       <button class="evv" data-v="week" onclick="evSetView('week')">สัปดาห์</button>
@@ -726,7 +726,12 @@
       </div>
       <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     </div>
+    <!-- ① Control Room (ขั้นแรกของชุดเดินตรวจ) -->
+    <div id="crFlowBlock"></div>
+    <!-- ② จุดเดินตรวจ -->
     <div id="checkpointsList"></div>
+    <!-- ③④ Car Park + Contractor (ส่วนท้าย) -->
+    <div id="tailFlowBlock"></div>
 
     <!-- End Patrol button -->
     <button id="endPatrolBtn" onclick="confirmEndPatrol()" style="display:none;width:100%;margin-top:18px;padding:16px;background:linear-gradient(135deg,#1565C0,#0D47A1);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;box-shadow:0 2px 6px rgba(13,71,161,0.2);">
@@ -1134,7 +1139,7 @@ async function loadAll() {
 function renderAll() {
   renderHeader();
   renderProgress();
-  renderCheckpoints();
+  try { renderShiftFlow(); } catch(e) { renderCheckpoints(); }
   renderHistory();
   populateIncidentLocations();
 }
@@ -1203,6 +1208,68 @@ function renderProgress() {
   }
 }
 
+function __flowCSS(){
+  if(document.getElementById('flowCss')) return;
+  var s=document.createElement('style'); s.id='flowCss';
+  s.textContent='.flowstep{display:flex;align-items:center;gap:11px;padding:13px;border-radius:13px;margin-bottom:9px;cursor:pointer;border:1px solid #e3e6ee;background:#fff;}'
+   +'.flowstep .fno{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;}'
+   +'.flowstep .ftx{flex:1;line-height:1.35;} .flowstep .ftx b{font-size:13.5px;} .flowstep .ftx small{display:block;color:#8b8fa3;font-size:10.5px;margin-top:2px;}'
+   +'.flowstep .fgo{color:#c2c7d2;font-size:20px;}'
+   +'.flowstep.crtodo{border:2px solid #f39c12;background:#fffdf6;} .flowstep.crtodo .fno{background:#f39c12;color:#fff;}'
+   +'.flowstep.todo{border-color:#bcd6f5;background:#f5f9ff;} .flowstep.todo .fno{background:#e3eefc;color:#1565C0;}'
+   +'.flowstep.done{border:1.5px solid #bfe6cf;background:#f1faf4;} .flowstep.done .fno{background:#27ae60;color:#fff;} .flowstep.done .ftx b{color:#1e7a45;}'
+   +'.freq{background:#e74c3c;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:5px;vertical-align:middle;}'
+   +'.flowdiv{text-align:center;font-size:10.5px;color:#8b8fa3;margin:12px 0 9px;}';
+  document.head.appendChild(s);
+}
+let __crComplete = false;
+async function renderShiftFlow(){
+  __flowCSS();
+  var sh=_shiftId(), uid=_uid();
+  var crEl=document.getElementById('crFlowBlock');
+  var tailEl=document.getElementById('tailFlowBlock');
+  var endBtn=document.getElementById('endPatrolBtn');
+  var cr=null,cp=null,co=null;
+  try{ cr=await api('getControlRoomStatus',{userId:uid,shift:sh}); }catch(e){}
+  try{ cp=await api('getCarParkToday',{userId:uid,shift:sh}); }catch(e){}
+  try{ co=await api('getContractorsToday',{userId:uid,shift:sh}); }catch(e){}
+  var crDone=!!(cr&&cr.done), cpDone=!!(cp&&cp.records&&cp.records.length), coDone=!!(co&&co.contractors&&co.contractors.length);
+  __crComplete=crDone; window.__crDone=crDone; try{__crDone=crDone;}catch(e){}
+  if(crEl){
+    crEl.innerHTML = crDone
+      ? '<div class="flowstep done" onclick="showControlRoom()"><div class="fno">✓</div><div class="ftx"><b>🏢 Control Room — ตรวจแล้ว</b><small>Fire · Elevator · CCTV · แตะเพื่อแก้ไข</small></div><div class="fgo">›</div></div>'
+      : '<div class="flowstep crtodo" onclick="showControlRoom()"><div class="fno">0</div><div class="ftx"><b>🏢 ① Control Room<span class="freq">บังคับก่อน</span></b><small>ตรวจ Fire / Elevator / CCTV — แตะเพื่อตรวจ</small></div><div class="fgo">›</div></div>';
+  }
+  renderCheckpoints();
+  var total=currentCheckpoints.length;
+  var doneN=Object.keys(checkedIn).filter(function(id){return currentCheckpoints.find(function(c){return c.id===id;});}).length;
+  var cpAllDone=(total>0 && doneN>=total);
+  if(tailEl){
+    var h='<div class="flowdiv">— ส่วนท้าย · กรอกเมื่อพร้อม —</div>';
+    h+= cpDone
+      ? '<div class="flowstep done" onclick="showCarPark()"><div class="fno">✓</div><div class="ftx"><b>🅿️ Car Park — กรอกแล้ว</b><small>แตะเพื่อแก้ไข</small></div><div class="fgo">›</div></div>'
+      : '<div class="flowstep todo" onclick="showCarPark()"><div class="fno">3</div><div class="ftx"><b>🅿️ Car Park</b><small>นับรถ/มอเตอร์ไซค์ — แตะเพื่อกรอก</small></div><div class="fgo">›</div></div>';
+    h+= coDone
+      ? '<div class="flowstep done" onclick="showContractor()"><div class="fno">✓</div><div class="ftx"><b>👷 Contractor — บันทึกแล้ว</b><small>แตะเพื่อดู/แก้ไข</small></div><div class="fgo">›</div></div>'
+      : '<div class="flowstep todo" onclick="showContractor()"><div class="fno">4</div><div class="ftx"><b>👷 Contractor</b><small>กรอก หรือยืนยันไม่มี — แตะเพื่อทำ</small></div><div class="fgo">›</div></div>';
+    tailEl.innerHTML=h;
+  }
+  if(endBtn){
+    var miss=[];
+    if(!crDone) miss.push('Control Room');
+    if(!cpAllDone) miss.push('เดินตรวจ '+doneN+'/'+(total||0));
+    if(!cpDone) miss.push('Car Park');
+    if(!coDone) miss.push('Contractor');
+    if(miss.length){
+      endBtn.disabled=true; endBtn.style.background='#cdd2dc'; endBtn.style.boxShadow='none'; endBtn.style.cursor='not-allowed';
+      endBtn.innerHTML='🔒 จบกะ + ส่งรายงาน<div style="font-size:11px;font-weight:400;margin-top:3px;">ยังขาด: '+miss.join(' · ')+'</div>';
+    } else {
+      endBtn.disabled=false; endBtn.style.background='linear-gradient(135deg,#1565C0,#0D47A1)'; endBtn.style.boxShadow='0 2px 6px rgba(13,71,161,0.2)'; endBtn.style.cursor='pointer';
+      endBtn.innerHTML='🏁 จบกะ + ส่งรายงาน';
+    }
+    endBtn.style.display='block';
+  }
+}
 function renderCheckpoints() {
   const list = document.getElementById('checkpointsList');
   if (currentCheckpoints.length === 0) {
@@ -1251,7 +1318,9 @@ function renderCheckpoints() {
           </div>
           ${done
             ? `<button class="cp-btn cp-btn-secondary" onclick="openCheckinModal('${cp.id}')">🖼 จัดการ</button>`
-            : `<button class="cp-btn" onclick="openCheckinModal('${cp.id}')">เช็คอิน</button>`}
+            : (__crComplete
+                ? `<button class="cp-btn" onclick="openCheckinModal('${cp.id}')">เช็คอิน</button>`
+                : `<button class="cp-btn" disabled style="opacity:.55;background:#e7e9f0;color:#aeb4c2;cursor:not-allowed;">🔒 ตรวจ Control Room ก่อน</button>`)}
         </div>`;
     });
   });
@@ -1758,6 +1827,7 @@ async function submitCheckin() {
       closeCheckinModal();
       renderProgress();
       renderCheckpoints();
+      try { renderShiftFlow(); } catch(e) {}
       api('getTodayPatrol', { userId: userProfile.userId }).then(t => {
         history = t.history || [];
         renderHistory();
@@ -2442,27 +2512,13 @@ function _shiftId(){ if(window.__activeShiftId) return window.__activeShiftId; i
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function goPatrol(){ return advanceFlow(); }
 // ระบบ flow บังคับตามลำดับ + จำสถานะจากเซิร์ฟเวอร์ (ปิดแอปแล้วเปิดใหม่ก็ทำต่อจากเดิม)
+// ชุดเดินตรวจรวมหน้าเดียว: advanceFlow = ปิดหน้าย่อย + กลับสู่ลิสต์ + รีเฟรชสถานะทั้งหมด
 async function advanceFlow(){
-  try{
-    var sh=_shiftId(), uid=_uid();
-    // ① Control Room (บังคับก่อนเดินตรวจ)
-    var cr; try{ cr=await api('getControlRoomStatus',{userId:uid,shift:sh}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
-    if(!(cr&&cr.done)){ __crDone=false; showToast('① ตรวจ Control Room ก่อนเริ่มเดินตรวจ','error'); showControlRoom(); return; }
-    __crDone=true;
-    // ② เดินตรวจจุดให้ครบ
-    var total=currentCheckpoints.length;
-    var done=Object.keys(checkedIn).filter(function(id){return currentCheckpoints.find(function(c){return c.id===id;});}).length;
-    if(total>0 && done<total){ showToast('② เดินตรวจให้ครบ ('+done+'/'+total+' จุด)','error'); openSection('patrol'); return; }
-    // ③ Car Park
-    var cp; try{ cp=await api('getCarParkToday',{shift:sh,userId:uid}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
-    if(!(cp&&cp.records&&cp.records.length)){ showToast('③ บันทึก Car Park','error'); showCarPark(); return; }
-    // ④ Contractor
-    var co; try{ co=await api('getContractorsToday',{shift:sh,userId:uid}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
-    if(!(co&&co.contractors&&co.contractors.length)){ showToast('④ บันทึก Contractor (หรือกดยืนยันไม่มี)','error'); showContractor(); return; }
-    // ครบทุกขั้น
-    showToast('✓ ครบทุกขั้นแล้ว — จบกะ + ฝากกะได้เลย','success');
-    openSection('patrol');
-  }catch(e){ showToast('⚠️ ผิดพลาด — ลองใหม่','error'); }
+  try{ var s=document.getElementById('crScreen'); if(s)s.style.display='none'; }catch(e){}
+  try{ var c=document.getElementById('cpScreen'); if(c)c.style.display='none'; }catch(e){}
+  try{ var o=document.getElementById('coScreen'); if(o)o.style.display='none'; }catch(e){}
+  try{ openSection('patrol'); }catch(e){}
+  try{ await renderShiftFlow(); }catch(e){}
 }
 async function _recPick(inp, arr, thumbId, max){
   var files=Array.prototype.slice.call(inp.files||[]);
@@ -2488,16 +2544,37 @@ async function showControlRoom(){ _hideAllMain(); var s=document.getElementById(
     }
   }catch(e){}
 }
-function crPickFire(inp){ _recPick(inp, CR_fire, 'crFireThumbs', 2); }
-function crPickElev(inp){ _recPick(inp, CR_elev, 'crElevThumbs', 1); }
-function crPickCctv(inp){ _recPick(inp, CR_cctv, 'crCctvThumbs', 1); }
-function crToggleLift(k,btn){ CR_elevSt[k]=!CR_elevSt[k]; btn.className='liftb '+(CR_elevSt[k]?'ok':'bad'); btn.querySelector('.lst').textContent=CR_elevSt[k]?'ปกติ':'เสีย'; }
+async function crPickFire(inp){ await _recPick(inp, CR_fire, 'crFireThumbs', 2); crScheduleSave(); }
+async function crPickElev(inp){ await _recPick(inp, CR_elev, 'crElevThumbs', 1); crScheduleSave(); }
+async function crPickCctv(inp){ await _recPick(inp, CR_cctv, 'crCctvThumbs', 1); crScheduleSave(); }
+function crToggleLift(k,btn){ CR_elevSt[k]=!CR_elevSt[k]; btn.className='liftb '+(CR_elevSt[k]?'ok':'bad'); btn.querySelector('.lst').textContent=CR_elevSt[k]?'ปกติ':'เสีย'; crScheduleSave(); }
+// ===== Auto-save: Control Room =====
+let __crSaveTimer=null, __crSaving=false;
+function crScheduleSave(){ var ind=document.getElementById('crSaveInd'); if(ind){ind.textContent='💾 กำลังบันทึก...';ind.style.color='#f39c12';} clearTimeout(__crSaveTimer); __crSaveTimer=setTimeout(crAutoSave, 1000); }
+async function crAutoSave(){
+  if(__crSaving){ crScheduleSave(); return; }
+  __crSaving=true; var ind=document.getElementById('crSaveInd');
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
+    fireTrouble:(document.getElementById('crTrouble')||{}).value||0, fireDisable:(document.getElementById('crDisable')||{}).value||0,
+    firePhotos:CR_fire, elevStatus:CR_elevSt, elevPhotos:CR_elev,
+    cctvDvr:(document.getElementById('crDvr')||{}).checked?'ปกติ':'ผิดปกติ', cctvCam:(document.getElementById('crCam')||{}).checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv,
+    cctvNote:(document.getElementById('crCctvNote')||{}).value||'' };
+  try{
+    var r=await api('saveControlRoom',p,true);
+    if(r&&r.success){
+      if(ind){ind.textContent='✓ บันทึกแล้ว';ind.style.color='#27ae60';}
+      try{ var g=await api('getControlRoomToday',{userId:_uid(),shift:_shiftId()}); if(g&&g.exists){ CR_fire=(g.firePhotos||[]).slice(); CR_elev=(g.elevPhotos||[]).slice(); CR_cctv=(g.cctvPhotos||[]).slice(); _renderThumbs(CR_fire,'crFireThumbs'); _renderThumbs(CR_elev,'crElevThumbs'); _renderThumbs(CR_cctv,'crCctvThumbs'); } }catch(e){}
+    } else if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ — ลองแก้อีกครั้ง';ind.style.color='#e74c3c';}
+  }catch(e){ if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ (เน็ต) — จะลองใหม่';ind.style.color='#e74c3c';} }
+  __crSaving=false;
+}
 // CCTV: ติ๊กออก (ไม่ปกติ) → ไฮไลต์ช่องรายละเอียด + บังคับกรอก
 function crCctvToggle(){
   var bad=(!document.getElementById('crDvr').checked)||(!document.getElementById('crCam').checked);
   var lbl=document.getElementById('crCctvNoteLbl'), nt=document.getElementById('crCctvNote');
   if(lbl){ lbl.style.color=bad?'#e74c3c':''; lbl.style.fontWeight=bad?'700':''; lbl.textContent=bad?'⚠️ ระบุรายละเอียด — กล้อง/DVR ตัวไหนเสีย และแจ้งช่างหรือยัง (จำเป็น)':'รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)'; }
   if(nt){ nt.style.borderColor=bad?'#e74c3c':''; nt.style.background=bad?'#fff5f5':''; if(bad){ try{ nt.focus(); nt.scrollIntoView({behavior:'smooth',block:'center'}); }catch(e){} } }
+  crScheduleSave();
 }
 async function crSubmit(){
   if(CR_fire.length<2){ showToast('ถ่ายรูป Fire Alarm 2 รูป (ระบบ + Control Panel)','error'); return; }
@@ -2522,8 +2599,22 @@ async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpS
     if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
   }catch(e){}
 }
-function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; }
-function cpPick(inp){ _recPick(inp, CP_photos, 'cpThumbs', 3); }
+function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; cpScheduleSave(); }
+async function cpPick(inp){ await _recPick(inp, CP_photos, 'cpThumbs', 3); cpScheduleSave(); }
+// ===== Auto-save: Car Park =====
+let __cpSaveTimer=null, __cpSaving=false;
+function cpScheduleSave(){ var ind=document.getElementById('cpSaveInd'); if(ind){ind.textContent='💾 กำลังบันทึก...';ind.style.color='#f39c12';} clearTimeout(__cpSaveTimer); __cpSaveTimer=setTimeout(cpAutoSave, 1000); }
+async function cpAutoSave(){
+  if(__cpSaving){ cpScheduleSave(); return; }
+  __cpSaving=true; var ind=document.getElementById('cpSaveInd');
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
+    carsAround:document.getElementById('cpAround').textContent, carsLift:document.getElementById('cpLift').textContent, motorcycles:document.getElementById('cpMoto').textContent, photos:CP_photos };
+  try{ var r=await api('saveCarPark',p,true);
+    if(r&&r.success){ if(ind){ind.textContent='✓ บันทึกแล้ว';ind.style.color='#27ae60';} }
+    else if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ';ind.style.color='#e74c3c';}
+  }catch(e){ if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ (เน็ต)';ind.style.color='#e74c3c';} }
+  __cpSaving=false;
+}
 async function cpSubmit(){
   var btn=document.getElementById('cpSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
