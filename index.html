@@ -1939,7 +1939,8 @@ function ensureSwitchShiftLink() {
   const link = document.createElement('div');
   link.id = 'switchShiftLink';
   link.style.cssText = 'margin-top:8px;text-align:center;font-size:11px;';
-  link.innerHTML = '<a href="#" onclick="event.preventDefault();reopenClockIn();" style="color:#1A3D6B;text-decoration:underline;">+ เข้ากะอื่น (ไม่ต้องรอเวลา)</a>';
+  link.innerHTML = '<a href="#" onclick="event.preventDefault();reopenClockIn();" style="color:#1A3D6B;text-decoration:underline;">+ เข้ากะอื่น (ไม่ต้องรอเวลา)</a>'
+    + '<br><a href="#" onclick="event.preventDefault();cancelClockInRecord();" style="color:#c0392b;text-decoration:underline;display:inline-block;margin-top:6px;">✕ ยกเลิกเข้างาน (กดผิดกะ)</a>';
   card.parentNode.insertBefore(link, card.nextSibling);
 }
 
@@ -2192,10 +2193,57 @@ async function doEndPatrol() {
   }
 }
 
+// confirm dialog (yes/no) — เตือนก่อนทำสิ่งที่อาจพลาด
+function _confirm(msg){
+  return new Promise(function(resolve){
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;';
+    var box=document.createElement('div');
+    box.style.cssText='background:#fff;border-radius:14px;max-width:340px;width:100%;padding:18px;box-shadow:0 8px 30px rgba(0,0,0,.3);';
+    box.innerHTML='<div style="font-size:14px;line-height:1.7;color:#23252f;white-space:pre-line;">'+_esc(msg)+'</div>'
+      +'<div style="display:flex;gap:8px;margin-top:16px;">'
+      +'<button id="_cfNo" style="flex:1;padding:11px;border:1px solid #d0d4dd;background:#fff;border-radius:9px;font-size:14px;font-weight:600;color:#555;cursor:pointer;">ยกเลิก</button>'
+      +'<button id="_cfYes" style="flex:1;padding:11px;border:none;background:#1565C0;color:#fff;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;">ยืนยัน</button>'
+      +'</div>';
+    ov.appendChild(box); document.body.appendChild(ov);
+    box.querySelector('#_cfNo').onclick=function(){ ov.remove(); resolve(false); };
+    box.querySelector('#_cfYes').onclick=function(){ ov.remove(); resolve(true); };
+  });
+}
+// ยกเลิกการเข้างาน (กรณีกดผิดกะ)
+async function cancelClockInRecord(){
+  var sh=_shiftId();
+  var ok=await _confirm('ยกเลิกการเข้างานกะนี้?\n(ใช้กรณีกดผิดกะ — จะลบบันทึกเข้างานของกะนี้)');
+  if(!ok) return;
+  try{
+    var r=await api('cancelClockIn',{userId:userProfile.userId, shift:sh},true);
+    if(r&&r.success){ showToast('✓ ยกเลิกการเข้างานแล้ว','success'); window.__shiftEnded=true; setTimeout(function(){ location.reload(); }, 900); }
+    else showToast('❌ '+((r&&r.error)||'ยกเลิกไม่สำเร็จ'),'error');
+  }catch(e){ showToast('❌ เครือข่ายผิดพลาด','error'); }
+}
 async function doClockIn() {
+  const shiftId = window.__selectedShiftId || (currentShift && currentShift.id);
+  // กันเข้ากะผิด: เตือนถ้ากะที่เลือกไม่ตรงเวลาปัจจุบัน (ยังเข้าได้ถ้ายืนยัน — รองรับเข้ากะล่วงหน้า)
+  try {
+    var _nowShift = _guessShiftByTime();
+    if (shiftId && _nowShift && shiftId !== _nowShift) {
+      var _p=_bkkParts(); var _nowStr=String(_p.h).padStart(2,'0')+':'+String(_p.mi).padStart(2,'0');
+      var _sd=(window.SHIFT_DEFS && SHIFT_DEFS[shiftId])||{};
+      var _rng=(_sd.start!=null?String(_sd.start).padStart(2,'0')+':00':'')+'–'+(_sd.end!=null?String(_sd.end).padStart(2,'0')+':00':'');
+      var _ok=await _confirm('⚠️ กะที่เลือก: '+(_sd.label||shiftId)+' ('+_rng+')\nไม่ตรงกับเวลาปัจจุบัน ('+_nowStr+' น.)\n\nยืนยันเข้ากะนี้หรือไม่?');
+      if(!_ok){ return; }
+    }
+  } catch(e){}
+  // กันกดซ้ำ: เตือนถ้าเข้างานกะนี้อยู่แล้ว
+  try {
+    var _att=await api('getTodayAttendance',{userId:userProfile.userId});
+    if(_att && _att.clockedIn && _att.shift===shiftId){
+      var _ok2=await _confirm('คุณเข้างานกะนี้อยู่แล้ว\nต้องการบันทึกเข้างานซ้ำหรือไม่?');
+      if(!_ok2){ return; }
+    }
+  } catch(e){}
   const btn = document.getElementById('clockInBtn');
   if (btn) btn.textContent = '⏳ กำลังบันทึก...';
-  const shiftId = window.__selectedShiftId || (currentShift && currentShift.id);
   try {
     const r = await api('clockIn', { userId: userProfile.userId, userName: userProfile.displayName, shiftId: shiftId }, true);
     if (r.success) {
