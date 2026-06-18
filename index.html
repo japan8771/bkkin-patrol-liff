@@ -578,6 +578,8 @@
         <div class="recfl">ยืนยันสถานะ</div>
         <label class="okrow"><input type="checkbox" id="crDvr" checked> DVR ทั้งหมด 9 ตัว ทำงานปกติ</label>
         <label class="okrow"><input type="checkbox" id="crCam" checked> กล้องทั้งหมด 127 ตัว ทำงานปกติ</label>
+        <div class="recfl">รายละเอียด (ถ้ามีปัญหา — กล้องตัวไหนดับ / แจ้งช่างหรือยัง)</div>
+        <textarea id="crCctvNote" class="recfi" style="min-height:54px;" placeholder="เช่น CAM-12 โซน B2 ดับ — แจ้งช่างแล้ว 23:40"></textarea>
       </div>
       <button id="crSubmitBtn" class="recbtn" onclick="crSubmit()">✅ ยืนยัน Control Room → เริ่มเดินตรวจ</button>
     </div>
@@ -2124,6 +2126,7 @@ async function doClockIn() {
       await setActiveShift(shiftId);
       showClockedIn(r.clockInTime);
       showToast(r.alreadyClockedIn ? '✓ เข้างานแล้วก่อนหน้านี้' : '✓ บันทึกเข้างานสำเร็จ', 'success');
+      try{ var __cs = await api('getControlRoomStatus', { userId: userProfile.userId, shift: shiftId }); if (!(__cs && __cs.done)) { setTimeout(function(){ try{ showToast('🏢 ตรวจ Control Room ก่อนเริ่มเดินตรวจ', 'error'); }catch(e){} showControlRoom(); }, 700); } }catch(e){}
     } else {
       showToast('❌ ' + r.error, 'error');
       if (btn) btn.textContent = '🕐 บันทึกเข้างาน';
@@ -2304,7 +2307,8 @@ function _hideAllMain(){['homeMenu','helpPanel','handoverHistScreen','swapScreen
 /* ===== Control Room / Car Park / Contractor (records before patrol) ===== */
 var __crDone=false;
 var CR_fire=[], CR_elev=[], CR_cctv=[], CR_elevSt={E01:true,E02:true,E03:true,E04:true,E05:true};
-var CP_photos=[], CO_photos=[];
+var CP_photos=[], CO_photos=[], CO_EDIT_ROW=0;
+function _imgUrl(u){ u=String(u||''); if(u.indexOf('data:')===0)return u; var m=u.match(/\/d\/([\w-]+)/); if(m)return 'https://lh3.googleusercontent.com/d/'+m[1]+'=w300'; var m2=u.match(/[-\w]{25,}/); return m2?('https://lh3.googleusercontent.com/d/'+m2[0]+'=w300'):u; }
 function _uid(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.userId)||''; }
 function _uname(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.displayName)||''; }
 function _shiftId(){ return (typeof currentShift!=='undefined' && currentShift && currentShift.id)||'morning'; }
@@ -2320,10 +2324,24 @@ async function _recPick(inp, arr, thumbId, max){
   inp.value=''; _renderThumbs(arr, thumbId);
 }
 function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
-  el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+d+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
+  el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+_imgUrl(d)+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
 function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
 /* Control Room */
-function showControlRoom(){ _hideAllMain(); var s=document.getElementById('crScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); }
+function _applyLiftState(){ document.querySelectorAll('#crScreen .liftb').forEach(function(btn){ var k=((btn.querySelector('.lid')||{}).textContent)||''; var v=CR_elevSt[k]; var ok=!(v===false||v==='down'||v==='DOWN'||v==='เสีย'); btn.className='liftb '+(ok?'ok':'bad'); var st=btn.querySelector('.lst'); if(st)st.textContent=ok?'ปกติ':'เสีย'; }); }
+async function showControlRoom(){ _hideAllMain(); var s=document.getElementById('crScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
+  try{ var r=await api('getControlRoomToday',{userId:_uid(),shift:_shiftId()});
+    if(r&&r.exists){
+      CR_fire=(r.firePhotos||[]).slice(); CR_elev=(r.elevPhotos||[]).slice(); CR_cctv=(r.cctvPhotos||[]).slice();
+      _renderThumbs(CR_fire,'crFireThumbs'); _renderThumbs(CR_elev,'crElevThumbs'); _renderThumbs(CR_cctv,'crCctvThumbs');
+      document.getElementById('crTrouble').value=r.fireTrouble||0; document.getElementById('crDisable').value=r.fireDisable||0;
+      document.getElementById('crDvr').checked=(String(r.cctvDvr||'ปกติ').indexOf('ผิด')<0);
+      document.getElementById('crCam').checked=(String(r.cctvCam||'ปกติ').indexOf('ผิด')<0);
+      var nt=document.getElementById('crCctvNote'); if(nt)nt.value=r.cctvNote||'';
+      CR_elevSt=Object.assign({E01:true,E02:true,E03:true,E04:true,E05:true}, r.elevStatus||{}); _applyLiftState();
+      var sb=document.getElementById('crSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Control Room';
+    }
+  }catch(e){}
+}
 function crPickFire(inp){ _recPick(inp, CR_fire, 'crFireThumbs', 2); }
 function crPickElev(inp){ _recPick(inp, CR_elev, 'crElevThumbs', 1); }
 function crPickCctv(inp){ _recPick(inp, CR_cctv, 'crCctvThumbs', 1); }
@@ -2336,14 +2354,19 @@ async function crSubmit(){
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
     fireTrouble:document.getElementById('crTrouble').value||0, fireDisable:document.getElementById('crDisable').value||0,
     firePhotos:CR_fire, elevStatus:CR_elevSt, elevPhotos:CR_elev,
-    cctvDvr:document.getElementById('crDvr').checked?'ปกติ':'ผิดปกติ', cctvCam:document.getElementById('crCam').checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv };
+    cctvDvr:document.getElementById('crDvr').checked?'ปกติ':'ผิดปกติ', cctvCam:document.getElementById('crCam').checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv,
+    cctvNote:(document.getElementById('crCctvNote')||{}).value||'' };
   try{ var r=await api('saveControlRoom',p,true);
     if(r&&r.success){ __crDone=true; showToast('✅ บันทึก Control Room แล้ว — เริ่มเดินตรวจได้','success'); CR_fire=[];CR_elev=[];CR_cctv=[]; openSection('patrol'); }
     else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
 }
 /* Car Park */
-function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); }
+async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
+  try{ var r=await api('getCarParkToday',{shift:_shiftId()}); var recs=(r&&r.records)||[];
+    if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
+  }catch(e){}
+}
 function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; }
 function cpPick(inp){ _recPick(inp, CP_photos, 'cpThumbs', 3); }
 async function cpSubmit(){
@@ -2356,7 +2379,7 @@ async function cpSubmit(){
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
 }
 /* Contractor */
-function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
+function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); CO_EDIT_ROW=0; CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); var sb=document.getElementById('coSubmitBtn'); if(sb)sb.textContent='➕ เพิ่มผู้รับเหมารายนี้'; var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
 function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 3); }
 async function coConfirmNone(){
   if(!confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?'))return;
@@ -2365,18 +2388,31 @@ async function coConfirmNone(){
   }catch(e){ showToast('ผิดพลาด','error'); }
 }
 async function coLoad(){
-  try{ var r=await api('getContractorsToday',{shift:_shiftId()}); var list=document.getElementById('coList'); var arr=(r&&r.contractors)||[];
-    list.innerHTML = arr.length ? arr.map(function(c){ if(String(c.company).indexOf('ไม่มีผู้รับเหมา')>-1){ return '<div class="cocard" style="border-color:#bfe9dd;background:#f0fbf6;"><b style="color:#0f8c74;">✓ ยืนยันแล้ว: ไม่มีผู้รับเหมาเข้าทำงานในกะนี้</b></div>'; } return '<div class="cocard"><b>'+_esc(c.company)+' · '+_esc(c.people)+' คน</b><div class="com">⏰ '+_esc(c.workStart)+'–'+_esc(c.workEnd)+' · 📍 '+_esc(c.area)+'<br>🔧 '+_esc(c.detail)+'<br>✔️ '+_esc(c.ackBy)+'</div></div>'; }).join('') : '<div class="coempty">ยังไม่มีผู้รับเหมาในกะนี้</div>';
+  try{ var r=await api('getContractorsToday',{shift:_shiftId()}); var list=document.getElementById('coList'); var arr=(r&&r.contractors)||[]; window.CO_LIST=arr;
+    var act='style="cursor:pointer;font-size:17px;padding:3px 5px;flex-shrink:0;"';
+    list.innerHTML = arr.length ? arr.map(function(c,i){
+      if(String(c.company).indexOf('ไม่มีผู้รับเหมา')>-1){ return '<div class="cocard" style="border-color:#bfe9dd;background:#f0fbf6;display:flex;align-items:center;"><b style="color:#0f8c74;flex:1;">✓ ยืนยันแล้ว: ไม่มีผู้รับเหมาเข้าทำงานในกะนี้</b><span '+act+' onclick="coDel('+c.row+')">🗑</span></div>'; }
+      return '<div class="cocard"><div style="display:flex;align-items:flex-start;gap:8px;"><div style="flex:1;min-width:0;"><b>'+_esc(c.company)+' · '+_esc(c.people)+' คน</b><div class="com">⏰ '+_esc(c.workStart)+'–'+_esc(c.workEnd)+' · 📍 '+_esc(c.area)+'<br>🔧 '+_esc(c.detail)+'<br>✔️ '+_esc(c.ackBy)+'</div></div><span '+act+' onclick="coEdit('+i+')">✎</span><span '+act+' style="color:#c0392b" onclick="coDel('+c.row+')">🗑</span></div></div>';
+    }).join('') : '<div class="coempty">ยังไม่มีผู้รับเหมาในกะนี้</div>';
   }catch(e){}
 }
+function coEdit(i){ var c=(window.CO_LIST||[])[i]; if(!c)return;
+  document.getElementById('coCompany').value=c.company||''; document.getElementById('coPeople').value=c.people||'';
+  document.getElementById('coStart').value=c.workStart||''; document.getElementById('coEnd').value=c.workEnd||'';
+  document.getElementById('coArea').value=c.area||''; document.getElementById('coDetail').value=c.detail||''; document.getElementById('coAck').value=c.ackBy||'';
+  CO_photos=(c.photos||[]).slice(); _renderThumbs(CO_photos,'coThumbs'); CO_EDIT_ROW=c.row;
+  document.getElementById('coSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('coCompany').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+}
+async function coDel(row){ if(!confirm('ลบรายการนี้?'))return; try{ var r=await api('deleteContractor',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); coLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
 async function coSubmit(){
   var co=document.getElementById('coCompany').value.trim(); if(!co){ showToast('ใส่ชื่อบริษัท','error'); return; }
   var btn=document.getElementById('coSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
     company:co, people:document.getElementById('coPeople').value||0, workStart:document.getElementById('coStart').value, workEnd:document.getElementById('coEnd').value,
     area:document.getElementById('coArea').value, detail:document.getElementById('coDetail').value, ackBy:document.getElementById('coAck').value, photos:CO_photos };
+  if(CO_EDIT_ROW){ p.row=CO_EDIT_ROW; }
   try{ var r=await api('saveContractor',p,true);
-    if(r&&r.success){ showToast('✅ เพิ่มผู้รับเหมาแล้ว','success'); ['coCompany','coPeople','coArea','coDetail'].forEach(function(id){document.getElementById(id).value='';}); CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); coLoad(); }
+    if(r&&r.success){ showToast(CO_EDIT_ROW?'✅ แก้ไขแล้ว':'✅ เพิ่มผู้รับเหมาแล้ว','success'); CO_EDIT_ROW=0; ['coCompany','coPeople','coArea','coDetail'].forEach(function(id){document.getElementById(id).value='';}); CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); coLoad(); }
     else { showToast('บันทึกไม่สำเร็จ','error'); }
     btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้';
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้'; }
