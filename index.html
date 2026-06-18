@@ -400,11 +400,16 @@
     <div class="msec">1 · เริ่ม / ระหว่างกะ</div>
     <div class="mgrid">
       <button class="mtile" onclick="openSection('patrol')"><span class="mic">🕐</span><span class="mlb">เข้างาน</span><span class="mds">บันทึกเวลาเริ่มกะ</span></button>
-      <button class="mtile" onclick="openSection('patrol')"><span class="mic">📷</span><span class="mlb">เดินตรวจ</span><span class="mds">ถ่ายรูป + ติ๊กตามจุด</span></button>
+      <button class="mtile" onclick="goPatrol()"><span class="mic">📷</span><span class="mlb">เดินตรวจ</span><span class="mds">ถ่ายรูป + ติ๊กตามจุด</span></button>
       <button class="mtile malert" onclick="openSection('incident')"><span class="mic">🚨</span><span class="mlb">แจ้งเหตุ</span><span class="mds">รายงานเหตุผิดปกติ</span></button>
       <button class="mtile" onclick="menuHandover()"><span class="mic">📝</span><span class="mlb">มอบกะ</span><span class="mds">ฝากโน้ตให้กะถัดไป</span></button>
       <button class="mtile" onclick="checkGps()"><span class="mic">📍</span><span class="mlb">ตรวจ GPS</span><span class="mds">เช็กตำแหน่ง + ความแม่นยำ</span></button>
       <button class="mtile" onclick="showSwap()"><span class="mic">🔄</span><span class="mlb">เปลี่ยนกะ</span><span class="mds">ขอสลับ/เปลี่ยนกะ</span></button>
+    </div>
+    <div class="mgrid" style="margin-top:11px;">
+      <button class="mtile" onclick="showControlRoom()"><span class="mnew">ใหม่</span><span class="mic">🏢</span><span class="mlb">Control Room</span><span class="mds">ตรวจ Fire/Lift/CCTV (บังคับ)</span></button>
+      <button class="mtile" onclick="showCarPark()"><span class="mnew">ใหม่</span><span class="mic">🅿️</span><span class="mlb">Car Park</span><span class="mds">บันทึกจำนวนรถ</span></button>
+      <button class="mtile" onclick="showContractor()"><span class="mnew">ใหม่</span><span class="mic">👷</span><span class="mlb">Contractor</span><span class="mds">ผู้รับเหมาเข้างาน</span></button>
     </div>
     <div class="mgrid" style="margin-top:11px;">
       <button class="mtile mfull" onclick="showEvents()"><span class="mnew">ใหม่</span><span class="mic">📅</span><span class="mtxt"><span class="mlb">ปฏิทินงาน / Events</span><span class="mds">ตารางงานทีม · จองรถ · แขก VIP · แจ้งเตือน LINE</span></span></button>
@@ -510,6 +515,102 @@
   .ev-mn{font-size:14px;font-weight:700;color:var(--c-navy);}
   .ev-mc{font-size:11.5px;color:#8190a0;margin-top:4px;}
   </style>
+
+  <style>
+  .recsub{font-size:12px;color:#888;font-weight:600;margin:14px 2px 7px;}
+  .reccard{background:#fff;border:1px solid #e6e8ef;border-radius:14px;padding:14px;margin-bottom:12px;}
+  .recttl{font-weight:700;font-size:14.5px;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .recfl{font-size:12px;color:#888;font-weight:600;margin:11px 0 6px;}
+  .recfi{width:100%;padding:11px;border:1px solid #e6e8ef;border-radius:10px;font-size:15px;background:#fafbfc;}
+  .recnum{display:flex;gap:10px;}
+  .thmbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .thmb{position:relative;width:74px;height:74px;border-radius:9px;overflow:hidden;border:1px solid #c7eddd;}
+  .thmb img{width:100%;height:100%;object-fit:cover;}
+  .thmb button{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:1;cursor:pointer;}
+  .addph{width:74px;height:74px;border:2px dashed #cdd3df;border-radius:9px;background:#fafbfc;color:#8b8fa3;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .lifts2{display:flex;gap:6px;flex-wrap:wrap;}
+  .liftb{flex:1;min-width:56px;border-radius:10px;border:1px solid #c7eddd;background:#eafaf3;text-align:center;padding:8px 2px;cursor:pointer;}
+  .liftb.bad{border-color:#f3c9c4;background:#fdecea;}
+  .liftb .lid{font-size:12px;font-weight:800;color:#1A1A2E;} .liftb .lst{font-size:10px;font-weight:700;color:#0f8c74;margin-top:2px;} .liftb.bad .lst{color:#c0392b;}
+  .okrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #e6e8ef;border-radius:11px;margin-bottom:8px;font-size:13.5px;}
+  .okrow input{width:20px;height:20px;}
+  .costep{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e6e8ef;border-radius:13px;padding:13px 15px;margin-bottom:11px;}
+  .sbtn2{width:40px;height:40px;border-radius:11px;background:#eef0f5;color:#1A1A2E;font-size:22px;font-weight:700;border:none;cursor:pointer;}
+  .sbtn2.p{background:#1abc9c;color:#fff;} .sval2{font-size:23px;font-weight:800;min-width:46px;text-align:center;}
+  .cocard{background:#fff;border:1px solid #e6e8ef;border-radius:12px;padding:12px;margin-bottom:10px;font-size:13px;} .cocard .com{font-size:11.5px;color:#888;margin-top:5px;line-height:1.6;}
+  .coempty{text-align:center;color:#8b8fa3;font-size:12.5px;padding:14px;}
+  .recbtn{width:100%;padding:15px;border:none;border-radius:13px;font-size:15px;font-weight:800;color:#fff;background:#1abc9c;cursor:pointer;margin-top:6px;} .recbtn:disabled{background:#cfd3dd;}
+  .recpill{font-size:10px;color:#c0392b;background:#fdecea;padding:2px 8px;border-radius:20px;margin-left:auto;}
+  </style>
+
+  <div id="crScreen" style="display:none;">
+    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🏢 Control Room</div><div class="subs">บังคับ · ตรวจ Fire / Lift / CCTV ก่อนเดินตรวจ</div></div></div>
+    <div style="padding:14px;">
+      <div class="reccard">
+        <div class="recttl">🔥 Fire Alarm<span class="recpill">บังคับ</span></div>
+        <div class="recfl">📸 ถ่ายรูป (บังคับ 2 รูป — ระบบ + Control Panel)</div>
+        <div class="thmbs" id="crFireThumbs"></div>
+        <label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="crPickFire(this)"></label>
+        <div class="recnum">
+          <div style="flex:1;"><div class="recfl">Trouble Point</div><input id="crTrouble" class="recfi" type="number" value="0"></div>
+          <div style="flex:1;"><div class="recfl">Disable Point</div><input id="crDisable" class="recfi" type="number" value="0"></div>
+        </div>
+      </div>
+      <div class="reccard">
+        <div class="recttl">🛗 Elevator (E01–E05)<span class="recpill">บังคับ</span></div>
+        <div class="recfl">📸 ถ่ายรูป (บังคับ 1 รูป)</div>
+        <div class="thmbs" id="crElevThumbs"></div>
+        <label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="crPickElev(this)"></label>
+        <div class="recfl">สถานะลิฟต์ (แตะสลับ ปกติ/เสีย)</div>
+        <div class="lifts2">
+          <div class="liftb ok" onclick="crToggleLift('E01',this)"><div class="lid">E01</div><div class="lst">ปกติ</div></div>
+          <div class="liftb ok" onclick="crToggleLift('E02',this)"><div class="lid">E02</div><div class="lst">ปกติ</div></div>
+          <div class="liftb ok" onclick="crToggleLift('E03',this)"><div class="lid">E03</div><div class="lst">ปกติ</div></div>
+          <div class="liftb ok" onclick="crToggleLift('E04',this)"><div class="lid">E04</div><div class="lst">ปกติ</div></div>
+          <div class="liftb ok" onclick="crToggleLift('E05',this)"><div class="lid">E05</div><div class="lst">ปกติ</div></div>
+        </div>
+      </div>
+      <div class="reccard">
+        <div class="recttl">📹 CCTV (9 DVR · 127 กล้อง)<span class="recpill">บังคับ</span></div>
+        <div class="recfl">📸 ถ่ายรูป (บังคับ 1 รูป)</div>
+        <div class="thmbs" id="crCctvThumbs"></div>
+        <label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="crPickCctv(this)"></label>
+        <div class="recfl">ยืนยันสถานะ</div>
+        <label class="okrow"><input type="checkbox" id="crDvr" checked> DVR ทั้งหมด 9 ตัว ทำงานปกติ</label>
+        <label class="okrow"><input type="checkbox" id="crCam" checked> กล้องทั้งหมด 127 ตัว ทำงานปกติ</label>
+      </div>
+      <button id="crSubmitBtn" class="recbtn" onclick="crSubmit()">✅ ยืนยัน Control Room → เริ่มเดินตรวจ</button>
+    </div>
+  </div>
+
+  <div id="cpScreen" style="display:none;">
+    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">🅿️ Car Park Record</div><div class="subs">บันทึกจำนวนรถ · กรอกได้ตลอดกะ</div></div></div>
+    <div style="padding:14px;">
+      <div class="costep"><div><div style="font-weight:700;font-size:14px;">🚗 รถยนต์รอบอาคาร</div><div style="font-size:11px;color:#888;">Cars around building</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpAround',-1)">−</button><div class="sval2" id="cpAround">0</div><button class="sbtn2 p" onclick="cpStep('cpAround',1)">+</button></div></div>
+      <div class="costep"><div><div style="font-weight:700;font-size:14px;">🛗 รถในลิฟต์จอดรถ</div><div style="font-size:11px;color:#888;">Cars in parking lift</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpLift',-1)">−</button><div class="sval2" id="cpLift">0</div><button class="sbtn2 p" onclick="cpStep('cpLift',1)">+</button></div></div>
+      <div class="costep"><div><div style="font-weight:700;font-size:14px;">🏍️ มอเตอร์ไซค์</div><div style="font-size:11px;color:#888;">Motorcycles</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpMoto',-1)">−</button><div class="sval2" id="cpMoto">0</div><button class="sbtn2 p" onclick="cpStep('cpMoto',1)">+</button></div></div>
+      <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="cpPick(this)"></label></div>
+      <button id="cpSubmitBtn" class="recbtn" onclick="cpSubmit()">💾 บันทึก Car Park</button>
+    </div>
+  </div>
+
+  <div id="coScreen" style="display:none;">
+    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">👷 Contractor Report</div><div class="subs">ผู้รับเหมาเข้าทำงาน · เพิ่มได้หลายราย</div></div></div>
+    <div style="padding:14px;">
+      <div id="coList"></div>
+      <div class="reccard">
+        <div class="recttl">➕ เพิ่มผู้รับเหมา</div>
+        <div class="recfl">บริษัท</div><input id="coCompany" class="recfi" placeholder="ชื่อบริษัท">
+        <div class="recfl">จำนวนคน</div><input id="coPeople" class="recfi" type="number" placeholder="เช่น 4">
+        <div class="recfl">เวลาทำงาน</div><div class="recnum"><input id="coStart" class="recfi" type="time"><input id="coEnd" class="recfi" type="time"></div>
+        <div class="recfl">พื้นที่ / ชั้น</div><input id="coArea" class="recfi" placeholder="เช่น 4F ห้องเครื่องสระ">
+        <div class="recfl">รายละเอียดงาน</div><textarea id="coDetail" class="recfi" style="min-height:60px;"></textarea>
+        <div class="recfl">มอบหมายผู้รับทราบ</div><input id="coAck" class="recfi" placeholder="ชื่อผู้รับทราบ">
+        <div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="coThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="coPick(this)"></label>
+      </div>
+      <button id="coSubmitBtn" class="recbtn" onclick="coSubmit()">➕ เพิ่มผู้รับเหมารายนี้</button>
+    </div>
+  </div>
 
   <div id="eventsScreen" style="display:none;">
     <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">📅 ปฏิทินงาน</div><div class="subs">ตารางงาน · อีเวนต์ · แขก VIP</div></div></div>
@@ -1510,6 +1611,7 @@ function getGpsCoords(timeoutMs) {
 }
 
 async function submitCheckin() {
+  if(!__crDone){ try{ var _st=await api('getControlRoomStatus',{userId:_uid(),shift:_shiftId()}); __crDone=!!(_st&&_st.done); }catch(e){} if(!__crDone){ try{showToast('🔒 ตรวจ Control Room ก่อนเริ่มเดินตรวจ','error');}catch(e){} showControlRoom(); return; } }
   if (checkinPhotos.length === 0) {
     document.getElementById('cm_photoArea').classList.add('error');
     showToast('ต้องมีรูปอย่างน้อย 1 รูป!', 'error');
@@ -2170,8 +2272,82 @@ function menuHandover(){
 function menuSoon(n){alert(n+' — กำลังพัฒนา จะเปิดให้ใช้เร็ว ๆ นี้ครับ');}
 
 
-function _hideExtra(){['handoverHistScreen','swapScreen','eventsScreen','eventFormScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});}
-function _hideAllMain(){['homeMenu','helpPanel','handoverHistScreen','swapScreen','eventsScreen','eventFormScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});}
+function _hideExtra(){['handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','crScreen','cpScreen','coScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});}
+function _hideAllMain(){['homeMenu','helpPanel','handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','crScreen','cpScreen','coScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});}
+/* ===== Control Room / Car Park / Contractor (records before patrol) ===== */
+var __crDone=false;
+var CR_fire=[], CR_elev=[], CR_cctv=[], CR_elevSt={E01:true,E02:true,E03:true,E04:true,E05:true};
+var CP_photos=[], CO_photos=[];
+function _uid(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.userId)||''; }
+function _uname(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.displayName)||''; }
+function _shiftId(){ return (typeof currentShift!=='undefined' && currentShift && currentShift.id)||'morning'; }
+function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function goPatrol(){
+  try{ var st=await api('getControlRoomStatus',{userId:_uid(),shift:_shiftId()}); __crDone=!!(st&&st.done); }catch(e){}
+  if(!__crDone){ try{showToast('🔒 ตรวจ Control Room ก่อนเริ่มเดินตรวจ','error');}catch(e){} showControlRoom(); return; }
+  openSection('patrol');
+}
+async function _recPick(inp, arr, thumbId, max){
+  var files=Array.prototype.slice.call(inp.files||[]);
+  for(var i=0;i<files.length && arr.length<max;i++){ try{ var d=await resizeImage(files[i],1280,0.7); arr.push(d); }catch(e){} }
+  inp.value=''; _renderThumbs(arr, thumbId);
+}
+function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
+  el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+d+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
+function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
+/* Control Room */
+function showControlRoom(){ _hideAllMain(); var s=document.getElementById('crScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); }
+function crPickFire(inp){ _recPick(inp, CR_fire, 'crFireThumbs', 2); }
+function crPickElev(inp){ _recPick(inp, CR_elev, 'crElevThumbs', 1); }
+function crPickCctv(inp){ _recPick(inp, CR_cctv, 'crCctvThumbs', 1); }
+function crToggleLift(k,btn){ CR_elevSt[k]=!CR_elevSt[k]; btn.className='liftb '+(CR_elevSt[k]?'ok':'bad'); btn.querySelector('.lst').textContent=CR_elevSt[k]?'ปกติ':'เสีย'; }
+async function crSubmit(){
+  if(CR_fire.length<2){ showToast('ถ่ายรูป Fire Alarm 2 รูป (ระบบ + Control Panel)','error'); return; }
+  if(CR_elev.length<1){ showToast('ถ่ายรูประบบลิฟต์ 1 รูป','error'); return; }
+  if(CR_cctv.length<1){ showToast('ถ่ายรูป CCTV 1 รูป','error'); return; }
+  var btn=document.getElementById('crSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
+    fireTrouble:document.getElementById('crTrouble').value||0, fireDisable:document.getElementById('crDisable').value||0,
+    firePhotos:CR_fire, elevStatus:CR_elevSt, elevPhotos:CR_elev,
+    cctvDvr:document.getElementById('crDvr').checked?'ปกติ':'ผิดปกติ', cctvCam:document.getElementById('crCam').checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv };
+  try{ var r=await api('saveControlRoom',p,true);
+    if(r&&r.success){ __crDone=true; showToast('✅ บันทึก Control Room แล้ว — เริ่มเดินตรวจได้','success'); CR_fire=[];CR_elev=[];CR_cctv=[]; openSection('patrol'); }
+    else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
+  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
+}
+/* Car Park */
+function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); }
+function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; }
+function cpPick(inp){ _recPick(inp, CP_photos, 'cpThumbs', 3); }
+async function cpSubmit(){
+  var btn=document.getElementById('cpSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
+    carsAround:document.getElementById('cpAround').textContent, carsLift:document.getElementById('cpLift').textContent, motorcycles:document.getElementById('cpMoto').textContent, photos:CP_photos };
+  try{ var r=await api('saveCarPark',p,true);
+    if(r&&r.success){ showToast('✅ บันทึก Car Park แล้ว','success'); CP_photos=[]; _renderThumbs(CP_photos,'cpThumbs'); showHomeMenu(); }
+    else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
+  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
+}
+/* Contractor */
+function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
+function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 3); }
+async function coLoad(){
+  try{ var r=await api('getContractorsToday',{shift:_shiftId()}); var list=document.getElementById('coList'); var arr=(r&&r.contractors)||[];
+    list.innerHTML = arr.length ? arr.map(function(c){ return '<div class="cocard"><b>'+_esc(c.company)+' · '+_esc(c.people)+' คน</b><div class="com">⏰ '+_esc(c.workStart)+'–'+_esc(c.workEnd)+' · 📍 '+_esc(c.area)+'<br>🔧 '+_esc(c.detail)+'<br>✔️ '+_esc(c.ackBy)+'</div></div>'; }).join('') : '<div class="coempty">ยังไม่มีผู้รับเหมาในกะนี้</div>';
+  }catch(e){}
+}
+async function coSubmit(){
+  var co=document.getElementById('coCompany').value.trim(); if(!co){ showToast('ใส่ชื่อบริษัท','error'); return; }
+  var btn=document.getElementById('coSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
+    company:co, people:document.getElementById('coPeople').value||0, workStart:document.getElementById('coStart').value, workEnd:document.getElementById('coEnd').value,
+    area:document.getElementById('coArea').value, detail:document.getElementById('coDetail').value, ackBy:document.getElementById('coAck').value, photos:CO_photos };
+  try{ var r=await api('saveContractor',p,true);
+    if(r&&r.success){ showToast('✅ เพิ่มผู้รับเหมาแล้ว','success'); ['coCompany','coPeople','coArea','coDetail'].forEach(function(id){document.getElementById(id).value='';}); CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); coLoad(); }
+    else { showToast('บันทึกไม่สำเร็จ','error'); }
+    btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้';
+  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้'; }
+}
 function _todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function _thMonth(m){return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m];}
 function _fmtTh(ds){var p=String(ds).split('-');if(p.length!==3)return ds;return parseInt(p[2],10)+' '+_thMonth(parseInt(p[1],10)-1)+' '+p[0];}
