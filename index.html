@@ -1085,16 +1085,15 @@ async function initLIFF() {
 
 async function loadAll() {
   setLoader('กำลังโหลดข้อมูลกะ...');
-  const [config, cps, today] = await Promise.all([
+  const [config, today] = await Promise.all([
     api('getConfig'),
-    api('getMyStatus', { userId: userProfile.userId }).then(s => api('getCheckpoints', { shift: '' })),
     api('getTodayPatrol', { userId: userProfile.userId }),
   ]);
   appConfig = config;
   currentShift = config.currentShift;
-  // re-fetch checkpoints with correct shift
-  const cpResult = await api('getCheckpoints', { shift: currentShift.id });
-  currentCheckpoints = cpResult.checkpoints;
+  if (currentShift && currentShift.id && window.SHIFT_DEFS && SHIFT_DEFS[currentShift.id]) window.__selectedShiftId = currentShift.id;
+  const cpResult = await api('getCheckpoints', { shift: currentShift && currentShift.id });
+  currentCheckpoints = (cpResult && cpResult.checkpoints) || [];
   checkedIn = today.checkedIn || {};
   history = today.history || [];
   renderAll();
@@ -1551,11 +1550,13 @@ function updateSubmitState() {
 
 async function handleCheckinPhoto(event) {
   const files = Array.from(event.target.files || []);
+  const _cap = event.target.hasAttribute('capture');
+  let _failed = 0;
   for (const file of files) {
     if (checkinPhotos.length >= 10) break;
-    const data = await resizeImage(file, 1280, 0.8, event.target.hasAttribute('capture'));
-    checkinPhotos.push(data);
+    try { checkinPhotos.push(await resizeImage(file, 1280, 0.8, _cap)); } catch (e) { _failed++; }
   }
+  if (_failed) showToast('⚠️ บางรูปอัปโหลดไม่ได้ ('+_failed+') — ลองถ่ายใหม่', 'error');
   event.target.value = '';
   document.getElementById('cm_photoArea').classList.remove('error');
   renderCheckinPhotos();
@@ -1564,11 +1565,13 @@ async function handleCheckinPhoto(event) {
 
 async function handleIncPhoto(event) {
   const files = Array.from(event.target.files || []);
+  const _cap = event.target.hasAttribute('capture');
+  let _failed = 0;
   for (const file of files) {
     if (incPhotos.length >= 10) break;
-    const data = await resizeImage(file, 1280, 0.8, event.target.hasAttribute('capture'));
-    incPhotos.push(data);
+    try { incPhotos.push(await resizeImage(file, 1280, 0.8, _cap)); } catch (e) { _failed++; }
   }
+  if (_failed) showToast('⚠️ บางรูปอัปโหลดไม่ได้ ('+_failed+')', 'error');
   event.target.value = '';
   renderIncPhotos();
 }
@@ -2017,30 +2020,33 @@ function formatRosterDate(dateStr) {
 
 async function openSwapDialog(rosterId, dateLabel, shiftLabel) {
   const guards = await ensureGuardsLoaded();
-  const myGuard = guards.find(function(g){ return g.userId === userProfile.userId; });
   const others = guards.filter(function(g){ return g.userId !== userProfile.userId; });
   if (!others.length) { showToast('ยังไม่มี guard คนอื่นที่ approved', 'error'); return; }
-
-  // Build modal-like prompt: list options 1-N
-  const list = others.map(function(g, i){ return (i+1)+'. '+g.displayName+' ('+g.guardId+')'; }).join('\n');
-  const ans = prompt('ขอเปลี่ยนกะ ' + dateLabel + ' ' + shiftLabel + '\n\nเลือกหมายเลข guard ที่จะให้เข้าแทน:\n\n' + list);
-  if (!ans) return;
-  const idx = parseInt(ans.trim(), 10) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= others.length) { showToast('หมายเลขไม่ถูกต้อง', 'error'); return; }
-  const target = others[idx];
-
-  const reason = prompt('เหตุผล (optional):') || '';
-  try {
-    const r = await api('requestSwap', { userId: userProfile.userId, rosterId: rosterId, swapToGuardId: target.guardId, reason: reason.trim() }, true);
-    if (r.success) {
-      showToast('✓ ส่งคำขอเปลี่ยนกะกับ ' + target.displayName + ' แล้ว — รอ Manager อนุมัติ', 'success');
-      loadMyRoster();
-    } else {
-      showToast('❌ ' + (r.error || 'error'), 'error');
-    }
-  } catch (e) {
-    showToast('❌ Network error', 'error');
-  }
+  // modal เลือกจาก dropdown (prompt ไม่เสถียรใน LINE in-app browser)
+  var ov = document.createElement('div');
+  ov.className = 'modal-overlay active';
+  ov.style.zIndex = '9999';
+  var opts = others.map(function(g, i){ return '<option value="'+i+'">'+_esc(g.displayName)+' ('+_esc(g.guardId)+')</option>'; }).join('');
+  ov.innerHTML = '<div class="modal"><div class="modal-title">🔄 ขอเปลี่ยนกะ</div>' +
+    '<div class="modal-subtitle">' + _esc(dateLabel) + ' ' + _esc(shiftLabel) + '</div>' +
+    '<div class="modal-section-label">ให้ใครเข้าแทน</div>' +
+    '<select id="swapSel" style="width:100%;padding:11px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff;">' + opts + '</select>' +
+    '<div class="modal-section-label">เหตุผล (ถ้ามี)</div>' +
+    '<textarea id="swapReason" rows="2" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:13px;" placeholder="เช่น ติดธุระ"></textarea>' +
+    '<div class="modal-buttons"><button class="btn btn-secondary" id="swapCancel">ยกเลิก</button><button class="btn btn-primary" id="swapOk">📤 ส่งคำขอ</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('#swapCancel').onclick = function(){ ov.remove(); };
+  ov.querySelector('#swapOk').onclick = async function(){
+    var target = others[parseInt(ov.querySelector('#swapSel').value, 10)];
+    var reason = ov.querySelector('#swapReason').value.trim();
+    var btn = ov.querySelector('#swapOk'); btn.disabled = true; btn.textContent = '⏳ กำลังส่ง...';
+    try {
+      var r = await api('requestSwap', { userId: userProfile.userId, rosterId: rosterId, swapToGuardId: target.guardId, reason: reason }, true);
+      ov.remove();
+      if (r && r.success) { showToast('✓ ส่งคำขอเปลี่ยนกะกับ ' + target.displayName + ' แล้ว — รอ Manager อนุมัติ', 'success'); loadMyRoster(); }
+      else showToast('❌ ' + ((r && r.error) || 'error'), 'error');
+    } catch (e) { ov.remove(); showToast('❌ ' + (e && e.message ? e.message : 'ผิดพลาด'), 'error'); }
+  };
 }
 
 function openHandoverModal() {
@@ -2125,6 +2131,7 @@ async function doEndPatrol() {
   try {
     const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName, shift: _shiftId() }, true);
     if (r.success) {
+      window.__shiftEnded = true;
       document.getElementById('endPatrolBtn').style.display = 'none';
       document.getElementById('reportedCard').style.display = 'block';
       document.getElementById('reportedTime').textContent = r.summary || 'ส่งสำเร็จ';
@@ -2171,6 +2178,7 @@ async function doClockIn() {
 // ============ Deep Link (Rich Menu URL params) ============
 function handleDeepLink() {
   try {
+    if (typeof _qparam === 'function' && _qparam('to')) return; // ?to= (rich menu) มาก่อน กันชนกัน
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (!tab) return;
@@ -2198,6 +2206,7 @@ window.addEventListener('load', initLIFF);
 
 // auto-refresh progress every 60 sec
 setInterval(() => {
+  if (window.__shiftEnded) return;
   if (guardInfo && document.getElementById('mainApp').style.display !== 'none') {
     renderProgress();
   }
@@ -2382,7 +2391,7 @@ async function crSubmit(){
   if(CR_fire.length<2){ showToast('ถ่ายรูป Fire Alarm 2 รูป (ระบบ + Control Panel)','error'); return; }
   if(CR_elev.length<1){ showToast('ถ่ายรูประบบลิฟต์ 1 รูป','error'); return; }
   if(CR_cctv.length<1){ showToast('ถ่ายรูป CCTV 1 รูป','error'); return; }
-  var btn=document.getElementById('crSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  var btn=document.getElementById('crSubmitBtn'); var _orig=btn.textContent; btn.disabled=true; btn.textContent='กำลังบันทึก...';
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
     fireTrouble:document.getElementById('crTrouble').value||0, fireDisable:document.getElementById('crDisable').value||0,
     firePhotos:CR_fire, elevStatus:CR_elevSt, elevPhotos:CR_elev,
@@ -2390,8 +2399,8 @@ async function crSubmit(){
     cctvNote:(document.getElementById('crCctvNote')||{}).value||'' };
   try{ var r=await api('saveControlRoom',p,true);
     if(r&&r.success){ __crDone=true; showToast('✅ บันทึก Control Room แล้ว — เริ่มเดินตรวจได้','success'); CR_fire=[];CR_elev=[];CR_cctv=[]; openSection('patrol'); }
-    else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
-  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='✅ ยืนยัน Control Room → เริ่มเดินตรวจ'; }
+    else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent=_orig; }
+  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent=_orig; }
 }
 /* Car Park */
 async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
