@@ -2005,7 +2005,7 @@ async function renderClockInScreen(){
   body.innerHTML='<div style="text-align:center;color:#8b8fa3;padding:24px;">⏳ กำลังโหลด...</div>';
   var att=null; try{ att=await api('getTodayAttendance',{userId:_uid()}); }catch(e){}
   if(att && att.clockedIn && !window.__ciForcePick){
-    var sh=att.shift||''; var sd=(window.SHIFT_DEFS&&SHIFT_DEFS[sh])||{};
+    var sh=att.shift||''; var sd=(SHIFT_DEFS&&SHIFT_DEFS[sh])||{};
     var t=''; try{ t=new Date(att.clockInTime).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'}); }catch(e){}
     body.innerHTML='<div style="background:linear-gradient(135deg,#eafaf4,#d6f3e3);border:1.5px solid #aee0c4;border-radius:14px;padding:18px;text-align:center;margin-bottom:16px;">'
       +'<div style="font-size:34px;">✅</div><div style="font-size:16px;font-weight:800;color:#1e7a45;margin-top:4px;">เข้างานแล้ว</div>'
@@ -2018,7 +2018,7 @@ async function renderClockInScreen(){
     var nowShift=_guessShiftByTime();
     if(!window.__ciSel) window.__ciSel=(att&&att.shift)||nowShift;
     var ids=['morning','afternoon','night'];
-    var btns=ids.map(function(id){ var sd=(window.SHIFT_DEFS&&SHIFT_DEFS[id])||{}; var sel=(window.__ciSel===id); var now=(nowShift===id);
+    var btns=ids.map(function(id){ var sd=(SHIFT_DEFS&&SHIFT_DEFS[id])||{}; var sel=(window.__ciSel===id); var now=(nowShift===id);
       return '<div onclick="ciPick(\''+id+'\')" style="flex:1;border:2px solid '+(sel?'#1abc9c':'#e3e6ee')+';border-radius:13px;padding:14px 6px;text-align:center;background:'+(sel?'#eafaf5':'#fafbfc')+';position:relative;cursor:pointer;">'
         +(now?'<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#1abc9c;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:9px;white-space:nowrap;">• ปัจจุบัน</div>':'')
         +'<div style="font-size:24px;">'+(sd.icon||'')+'</div><div style="font-size:13px;font-weight:700;margin-top:5px;color:'+(sel?'#1abc9c':'#16244a')+';">'+(sd.label||id)+'</div><div style="font-size:10px;color:#8b8fa3;margin-top:2px;">'+String(sd.start).padStart(2,'0')+':00–'+String(sd.end).padStart(2,'0')+':00</div></div>';
@@ -2035,7 +2035,7 @@ async function ciDoClockIn(){
   var shiftId=window.__ciSel||_guessShiftByTime();
   var nowShift=_guessShiftByTime();
   if(shiftId!==nowShift){
-    var sd=(window.SHIFT_DEFS&&SHIFT_DEFS[shiftId])||{}; var p=_bkkParts(); var ns=String(p.h).padStart(2,'0')+':'+String(p.mi).padStart(2,'0');
+    var sd=(SHIFT_DEFS&&SHIFT_DEFS[shiftId])||{}; var p=_bkkParts(); var ns=String(p.h).padStart(2,'0')+':'+String(p.mi).padStart(2,'0');
     var ok=await _confirm('⚠️ กะที่เลือก: '+(sd.label||shiftId)+'\nไม่ตรงกับเวลาปัจจุบัน ('+ns+' น.)\n\nยืนยันเข้ากะนี้หรือไม่?'); if(!ok) return;
   }
   var btn=document.getElementById('ciSaveBtn'); if(btn){btn.textContent='⏳ กำลังบันทึก...';btn.disabled=true;}
