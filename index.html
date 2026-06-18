@@ -1199,7 +1199,7 @@ function renderCheckpoints() {
       const isRandom = cp.id.startsWith('GF');
       const cls = done ? (isIssue ? 'issue' : 'done') : '';
       // ใช้ timeStr ที่ backend pre-format มาจาก Bangkok TZ (ไม่ต้อง parse client-side)
-      const time = done ? (done.timeStr || new Date(done.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })) : '';
+      const time = done ? (done.timeStr || new Date(done.time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' })) : '';
       const photoCount = done && done.photoCount ? done.photoCount : 0;
       // Build tag pills if done
       let tagsHtml = '';
@@ -1258,12 +1258,12 @@ async function renderHistory() {
   let html = '';
   dateKeys.forEach(function (date) {
     const d = new Date(date + 'T00:00:00+07:00');
-    const dayLabel = d.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const dayLabel = d.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Bangkok' });
     html += '<div class="group-header" style="margin-top:14px;">📅 ' + dayLabel + '</div>';
     byDate[date].forEach(function (it) {
       // ใช้เวลาที่ backend pre-format ใน Bangkok TZ ตรง ๆ — ไม่ parse client-side
-      const startTime = it.firstTimeStr || (it.firstTime ? new Date(it.firstTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-');
-      const endTime = it.lastTimeStr || (it.lastTime ? new Date(it.lastTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '-');
+      const startTime = it.firstTimeStr || (it.firstTime ? new Date(it.firstTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '-');
+      const endTime = it.lastTimeStr || (it.lastTime ? new Date(it.lastTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : '-');
       const issuesBadge = it.issues > 0 ? '<span style="background:#FEF2F2;color:#B91C1C;padding:2px 6px;border-radius:6px;font-size:11px;font-weight:600;margin-left:6px;">⚠️ ' + it.issues + ' Issue</span>' : '';
       const viewBtn = it.reportUrl
         ? '<a href="' + it.reportUrl + '" target="_blank" style="flex:1;padding:8px;background:#2E7D32;color:#fff;border-radius:8px;text-align:center;text-decoration:none;font-size:13px;font-weight:600;">📄 ดู PDF เดิม</a>'
@@ -1594,9 +1594,9 @@ function removeIncPhoto(idx) {
 
 function _stampTime(ctx, w, h) {
   try {
-    var d = new Date();
+    var bp = _bkkParts();
     var p = function(n){ return String(n).padStart(2,'0'); };
-    var label = d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'  '+p(d.getHours())+':'+p(d.getMinutes());
+    var label = bp.y+'-'+p(bp.mo)+'-'+p(bp.d)+'  '+p(bp.h)+':'+p(bp.mi);
     var fs = Math.max(13, Math.round(w * 0.040));
     ctx.font = '700 ' + fs + 'px Arial, sans-serif';
     ctx.textBaseline = 'top';
@@ -1882,7 +1882,7 @@ function goClockIn(){
   try { var c = document.getElementById('clockInCard'); if (c) c.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e) {}
 }
 function showClockedIn(isoTime) {
-  const t = new Date(isoTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  const t = new Date(isoTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
   document.getElementById('clockInCard').style.display = 'none';
   document.getElementById('clockedInCard').style.display = 'flex';
   // compute elapsed
@@ -2357,7 +2357,7 @@ var CP_photos=[], CO_photos=[], CO_EDIT_ROW=0;
 function _imgUrl(u){ u=String(u||''); if(u.indexOf('data:')===0)return u; var m=u.match(/\/d\/([\w-]+)/); if(m)return 'https://lh3.googleusercontent.com/d/'+m[1]+'=w300'; var m2=u.match(/[-\w]{25,}/); return m2?('https://lh3.googleusercontent.com/d/'+m2[0]+'=w300'):u; }
 function _uid(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.userId)||''; }
 function _uname(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.displayName)||''; }
-function _guessShiftByTime(){ var h=new Date().getHours(); if(h>=7&&h<13)return 'morning'; if(h>=13&&h<22)return 'afternoon'; return 'night'; }
+function _guessShiftByTime(){ var h=_bkkParts().h; if(h>=7&&h<13)return 'morning'; if(h>=13&&h<22)return 'afternoon'; return 'night'; }
 function _shiftId(){ if(typeof currentShift!=='undefined' && currentShift && currentShift.id) return currentShift.id; if(window.__selectedShiftId) return window.__selectedShiftId; return _guessShiftByTime(); }
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function goPatrol(){
@@ -2464,7 +2464,15 @@ async function coSubmit(){
     btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้';
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้'; }
 }
-function _todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _bkkParts(){
+  try{
+    var s = new Date().toLocaleString('en-CA', { timeZone:'Asia/Bangkok', hour12:false, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit' });
+    var m = s.match(/(\d{4})-(\d{2})-(\d{2})[^\d]+(\d{2}):(\d{2}):(\d{2})/);
+    if(m) return {y:+m[1],mo:+m[2],d:+m[3],h:(+m[4])%24,mi:+m[5],s:+m[6]};
+  }catch(e){}
+  var d=new Date(); return {y:d.getFullYear(),mo:d.getMonth()+1,d:d.getDate(),h:d.getHours(),mi:d.getMinutes(),s:d.getSeconds()};
+}
+function _todayStr(){var p=_bkkParts();return p.y+'-'+String(p.mo).padStart(2,'0')+'-'+String(p.d).padStart(2,'0');}
 function _thMonth(m){return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m];}
 function _fmtTh(ds){var p=String(ds).split('-');if(p.length!==3)return ds;return parseInt(p[2],10)+' '+_thMonth(parseInt(p[1],10)-1)+' '+p[0];}
 function _shLabel(id){return {morning:'🌅 กะเช้า',afternoon:'☀️ กะบ่าย',night:'🌙 กะดึก'}[id]||id;}
