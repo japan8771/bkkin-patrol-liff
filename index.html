@@ -1735,6 +1735,8 @@ async function submitCheckin() {
         renderHistory();
       });
       showToast(anyFailed ? '✓ บันทึกแล้ว (พบ Issue → แจ้ง Manager แล้ว)' : '✓ บันทึกสำเร็จ ' + checkinPhotos.length + ' รูป', anyFailed ? 'error' : 'success');
+      // flow: เดินครบทุกจุด → เด้งไป Car Park / Contractor ต่อ
+      try { var __t = currentCheckpoints.length, __d = Object.keys(checkedIn).filter(function(id){return currentCheckpoints.find(function(c){return c.id===id;});}).length; if (__t>0 && __d>=__t) setTimeout(function(){ advanceFlow(); }, 900); } catch(e){}
     } else {
       showToast('❌ ' + (res.error || 'ผิดพลาด'), 'error');
       document.getElementById('cm_submit').disabled = false;
@@ -1876,10 +1878,12 @@ function showClockInButton() {
 }
 
 function goClockIn(){
-  // กด "เข้างาน" → เปิดหน้าเลือกกะ + ปุ่มบันทึกเข้างานเสมอ (เข้าใหม่/เปลี่ยนกะได้ แม้เข้างานแล้ว)
+  // กด "เข้างาน" → แสดงปุ่มเลือกกะ + บันทึกเข้างานเสมอ (แม้เข้างานแล้วก็เข้าใหม่/เปลี่ยนกะได้)
   openSection('patrol');
-  try { reopenClockIn(); } catch(e) { try { showClockInButton(); } catch(_e) {} }
-  try { var c = document.getElementById('clockInCard'); if (c) c.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e) {}
+  try { var ci=document.getElementById('clockedInCard'); if(ci) ci.style.display='none'; } catch(e){}
+  try { var l=document.getElementById('switchShiftLink'); if(l) l.remove(); } catch(e){}
+  try { showClockInButton(); } catch(e) {}
+  try { var c = document.getElementById('clockInCard'); if (c) c.scrollIntoView({ behavior:'smooth', block:'start' }); } catch(e) {}
 }
 function showClockedIn(isoTime) {
   const t = new Date(isoTime).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
@@ -2170,7 +2174,7 @@ async function doClockIn() {
       await setActiveShift(shiftId);
       showClockedIn(r.clockInTime);
       showToast(r.alreadyClockedIn ? '✓ เข้างานแล้วก่อนหน้านี้' : '✓ บันทึกเข้างานสำเร็จ', 'success');
-      try{ var __cs = await api('getControlRoomStatus', { userId: userProfile.userId, shift: shiftId }); if (!(__cs && __cs.done)) { setTimeout(function(){ try{ showToast('🏢 ตรวจ Control Room ก่อนเริ่มเดินตรวจ', 'error'); }catch(e){} showControlRoom(); }, 700); } }catch(e){}
+      setTimeout(function(){ advanceFlow(); }, 700);
     } else {
       showToast('❌ ' + r.error, 'error');
       if (btn) btn.textContent = '🕐 บันทึกเข้างาน';
@@ -2360,10 +2364,29 @@ function _uname(){ return (typeof userProfile!=='undefined' && userProfile && us
 function _guessShiftByTime(){ var h=_bkkParts().h; if(h>=7&&h<13)return 'morning'; if(h>=13&&h<22)return 'afternoon'; return 'night'; }
 function _shiftId(){ if(typeof currentShift!=='undefined' && currentShift && currentShift.id) return currentShift.id; if(window.__selectedShiftId) return window.__selectedShiftId; return _guessShiftByTime(); }
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-async function goPatrol(){
-  try{ var st=await api('getControlRoomStatus',{userId:_uid(),shift:_shiftId()}); __crDone=!!(st&&st.done); }catch(e){}
-  if(!__crDone){ try{showToast('🔒 ตรวจ Control Room ก่อนเริ่มเดินตรวจ','error');}catch(e){} showControlRoom(); return; }
-  openSection('patrol');
+async function goPatrol(){ return advanceFlow(); }
+// ระบบ flow บังคับตามลำดับ + จำสถานะจากเซิร์ฟเวอร์ (ปิดแอปแล้วเปิดใหม่ก็ทำต่อจากเดิม)
+async function advanceFlow(){
+  try{
+    var sh=_shiftId(), uid=_uid();
+    // ① Control Room (บังคับก่อนเดินตรวจ)
+    var cr; try{ cr=await api('getControlRoomStatus',{userId:uid,shift:sh}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
+    if(!(cr&&cr.done)){ __crDone=false; showToast('① ตรวจ Control Room ก่อนเริ่มเดินตรวจ','error'); showControlRoom(); return; }
+    __crDone=true;
+    // ② เดินตรวจจุดให้ครบ
+    var total=currentCheckpoints.length;
+    var done=Object.keys(checkedIn).filter(function(id){return currentCheckpoints.find(function(c){return c.id===id;});}).length;
+    if(total>0 && done<total){ showToast('② เดินตรวจให้ครบ ('+done+'/'+total+' จุด)','error'); openSection('patrol'); return; }
+    // ③ Car Park
+    var cp; try{ cp=await api('getCarParkToday',{shift:sh,userId:uid}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
+    if(!(cp&&cp.records&&cp.records.length)){ showToast('③ บันทึก Car Park','error'); showCarPark(); return; }
+    // ④ Contractor
+    var co; try{ co=await api('getContractorsToday',{shift:sh,userId:uid}); }catch(e){ showToast('⚠️ ตรวจสอบไม่สำเร็จ — ลองใหม่','error'); return; }
+    if(!(co&&co.contractors&&co.contractors.length)){ showToast('④ บันทึก Contractor (หรือกดยืนยันไม่มี)','error'); showContractor(); return; }
+    // ครบทุกขั้น
+    showToast('✓ ครบทุกขั้นแล้ว — จบกะ + ฝากกะได้เลย','success');
+    openSection('patrol');
+  }catch(e){ showToast('⚠️ ผิดพลาด — ลองใหม่','error'); }
 }
 async function _recPick(inp, arr, thumbId, max){
   var files=Array.prototype.slice.call(inp.files||[]);
@@ -2404,7 +2427,7 @@ async function crSubmit(){
     cctvDvr:document.getElementById('crDvr').checked?'ปกติ':'ผิดปกติ', cctvCam:document.getElementById('crCam').checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv,
     cctvNote:(document.getElementById('crCctvNote')||{}).value||'' };
   try{ var r=await api('saveControlRoom',p,true);
-    if(r&&r.success){ __crDone=true; showToast('✅ บันทึก Control Room แล้ว — เริ่มเดินตรวจได้','success'); CR_fire=[];CR_elev=[];CR_cctv=[]; openSection('patrol'); }
+    if(r&&r.success){ __crDone=true; showToast('✅ บันทึก Control Room แล้ว — เริ่มเดินตรวจได้','success'); CR_fire=[];CR_elev=[];CR_cctv=[]; advanceFlow(); }
     else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent=_orig; }
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent=_orig; }
 }
@@ -2421,7 +2444,7 @@ async function cpSubmit(){
   var p={ userId:_uid(), userName:_uname(), shift:_shiftId(),
     carsAround:document.getElementById('cpAround').textContent, carsLift:document.getElementById('cpLift').textContent, motorcycles:document.getElementById('cpMoto').textContent, photos:CP_photos };
   try{ var r=await api('saveCarPark',p,true);
-    if(r&&r.success){ showToast('✅ บันทึก Car Park แล้ว','success'); CP_photos=[]; _renderThumbs(CP_photos,'cpThumbs'); showHomeMenu(); }
+    if(r&&r.success){ showToast('✅ บันทึก Car Park แล้ว','success'); CP_photos=[]; _renderThumbs(CP_photos,'cpThumbs'); advanceFlow(); }
     else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
 }
@@ -2431,7 +2454,7 @@ function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 3); }
 async function coConfirmNone(){
   if(!confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?'))return;
   try{ var r=await api('saveContractor',{userId:_uid(),userName:_uname(),shift:_shiftId(),company:'(ไม่มีผู้รับเหมา)',people:0,workStart:'',workEnd:'',area:'',detail:'',ackBy:_uname(),photos:[]},true);
-    if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีผู้รับเหมาแล้ว','success'); coLoad(); } else showToast('บันทึกไม่สำเร็จ','error');
+    if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีผู้รับเหมาแล้ว','success'); coLoad(); setTimeout(function(){ advanceFlow(); }, 700); } else showToast('บันทึกไม่สำเร็จ','error');
   }catch(e){ showToast('ผิดพลาด','error'); }
 }
 async function coLoad(){
