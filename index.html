@@ -928,6 +928,26 @@ const SHIFT_DEFS = {
   afternoon: { id:'afternoon', label:'กะบ่าย', icon:'☀️', start:13, end:22 },
   night:     { id:'night',     label:'กะดึก',  icon:'🌙', start:22, end:7  },
 };
+// สร้าง checkedIn จาก history โดยกรองตามกะที่กดเข้างานจริง
+// (กัน backend คืน checkedIn ตามกะของเวลาปัจจุบัน ซึ่งอาจไม่ตรงกะที่เจ้าหน้าที่อยู่)
+function _ciFromHistory(hist, shiftId, backendCI){
+  var ci = {};
+  (hist||[]).forEach(function(h){
+    if(!h || !h.checkpointId) return;
+    if(shiftId && h.shift && h.shift !== shiftId) return;
+    if(ci[h.checkpointId]) return; // อันแรก (ใหม่สุด) ชนะ
+    var bk = (backendCI && backendCI[h.checkpointId]) || {};
+    ci[h.checkpointId] = {
+      logId: bk.logId || h.logId || null,
+      time: h.timestamp ? new Date(h.timestamp).getTime() : (bk.time || Date.now()),
+      timeStr: h.time || bk.timeStr || '',
+      status: (String(h.status||'').toLowerCase()==='issue') ? 'issue' : 'normal',
+      photoCount: h.photoCount || bk.photoCount || 0,
+      note: h.note || bk.note || ''
+    };
+  });
+  return ci;
+}
 async function setActiveShift(id) {
   if (!id || !SHIFT_DEFS[id]) return;
   currentShift = Object.assign({}, currentShift || {}, SHIFT_DEFS[id]);
@@ -939,7 +959,7 @@ async function setActiveShift(id) {
   } catch (e) {}
   try {
     const tp = await api('getTodayPatrol', { userId: userProfile.userId, shift: id });
-    if (tp) { if (tp.checkedIn) checkedIn = tp.checkedIn; if (tp.history) history = tp.history; }
+    if (tp && tp.history) { history = tp.history; checkedIn = _ciFromHistory(tp.history, id, tp.checkedIn); }
   } catch (e) {}
   renderAll();
 }
@@ -1102,8 +1122,8 @@ async function loadAll() {
   if (currentShift && currentShift.id && window.SHIFT_DEFS && SHIFT_DEFS[currentShift.id]) window.__selectedShiftId = currentShift.id;
   const cpResult = await api('getCheckpoints', { shift: currentShift && currentShift.id });
   currentCheckpoints = (cpResult && cpResult.checkpoints) || [];
-  checkedIn = today.checkedIn || {};
   history = today.history || [];
+  checkedIn = _ciFromHistory(history, null, today.checkedIn);
   renderAll();
   // Load handover banner (T1.2) — in background
   loadHandover();
