@@ -931,9 +931,15 @@ const SHIFT_DEFS = {
 async function setActiveShift(id) {
   if (!id || !SHIFT_DEFS[id]) return;
   currentShift = Object.assign({}, currentShift || {}, SHIFT_DEFS[id]);
+  window.__activeShiftId = id;
+  window.__selectedShiftId = id;
   try {
     const cp = await api('getCheckpoints', { shift: id });
     if (cp && cp.checkpoints) currentCheckpoints = cp.checkpoints;
+  } catch (e) {}
+  try {
+    const tp = await api('getTodayPatrol', { userId: userProfile.userId, shift: id });
+    if (tp) { if (tp.checkedIn) checkedIn = tp.checkedIn; if (tp.history) history = tp.history; }
   } catch (e) {}
   renderAll();
 }
@@ -1090,7 +1096,9 @@ async function loadAll() {
     api('getTodayPatrol', { userId: userProfile.userId }),
   ]);
   appConfig = config;
-  currentShift = config.currentShift;
+  // ใช้กะที่กดเข้างานจริง (จาก getTodayPatrol) เป็นหลัก ไม่ใช่กะตามเวลา → จำสถานะได้ถูกกะ
+  currentShift = (today && today.currentShift) || config.currentShift;
+  window.__activeShiftId = (currentShift && currentShift.id) || null;
   if (currentShift && currentShift.id && window.SHIFT_DEFS && SHIFT_DEFS[currentShift.id]) window.__selectedShiftId = currentShift.id;
   const cpResult = await api('getCheckpoints', { shift: currentShift && currentShift.id });
   currentCheckpoints = (cpResult && cpResult.checkpoints) || [];
@@ -2362,7 +2370,7 @@ function _imgUrl(u){ u=String(u||''); if(u.indexOf('data:')===0)return u; var m=
 function _uid(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.userId)||''; }
 function _uname(){ return (typeof userProfile!=='undefined' && userProfile && userProfile.displayName)||''; }
 function _guessShiftByTime(){ var h=_bkkParts().h; if(h>=7&&h<13)return 'morning'; if(h>=13&&h<22)return 'afternoon'; return 'night'; }
-function _shiftId(){ if(typeof currentShift!=='undefined' && currentShift && currentShift.id) return currentShift.id; if(window.__selectedShiftId) return window.__selectedShiftId; return _guessShiftByTime(); }
+function _shiftId(){ if(window.__activeShiftId) return window.__activeShiftId; if(typeof currentShift!=='undefined' && currentShift && currentShift.id) return currentShift.id; if(window.__selectedShiftId) return window.__selectedShiftId; return _guessShiftByTime(); }
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function goPatrol(){ return advanceFlow(); }
 // ระบบ flow บังคับตามลำดับ + จำสถานะจากเซิร์ฟเวอร์ (ปิดแอปแล้วเปิดใหม่ก็ทำต่อจากเดิม)
