@@ -2435,6 +2435,7 @@ async function loadTodayIncidents() {
   try {
     const r = await api('getMyIncidentsToday', { userId: userProfile.userId });
     const items = (r && r.items) || [];
+    window._myIncidents = items;
     if (!items.length) { card.style.display = 'none'; return; }
     card.style.display = 'block';
     list.innerHTML = items.map(function(it){
@@ -2448,7 +2449,10 @@ async function loadTodayIncidents() {
           '<div style="font-size:11px;color:#666;">' + (it.time || '') + '</div>' +
         '</div>' +
         '<div style="font-size:12px;color:#444;margin-bottom:6px;">' + shortDesc + '</div>' +
-        '<button onclick="openIncidentPhotoModal(\'' + it.incidentId + '\')" style="width:100%;padding:8px;background:#fff;border:1px solid #FFB74D;color:#E65100;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🖼 จัดการรูป (' + (it.photoCount || 0) + ')</button>' +
+        '<div style="display:flex;gap:6px;">' +
+          '<button onclick="editIncidentById(\'' + it.incidentId + '\')" style="flex:1;padding:8px;background:#fff;border:1px solid #1565C0;color:#1565C0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">✏️ แก้ไขข้อความ</button>' +
+          '<button onclick="openIncidentPhotoModal(\'' + it.incidentId + '\')" style="flex:1;padding:8px;background:#fff;border:1px solid #FFB74D;color:#E65100;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🖼 รูป (' + (it.photoCount || 0) + ')</button>' +
+        '</div>' +
       '</div>';
     }).join('');
   } catch (e) { console.error('loadTodayIncidents err', e); card.style.display = 'none'; }
@@ -2741,7 +2745,7 @@ function hhChDay(n){var d=new Date(hhDate+'T00:00:00');d.setDate(d.getDate()+n);
 function hhToday(){hhDate=_todayStr();loadHandoverHist();}
 function hhSetShift(s){hhShift=s;hhRenderTabs();hhRender();}
 async function loadHandoverHist(){var lbl=document.getElementById('hhDateLabel');if(lbl)lbl.textContent=_fmtTh(hhDate);document.getElementById('hhList').innerHTML='<div class="hh-empty">⏳ กำลังโหลด...</div>';try{var r=await api('getHandoverHistory',{date:hhDate});hhData=(r&&r.items)||[];}catch(e){hhData=[];}hhRender();}
-function hhRender(){var list=hhData.filter(function(n){return hhShift==='all'||n.fromShift===hhShift;});var box=document.getElementById('hhList');if(!list.length){box.innerHTML='<div class="hh-empty">📝<br>ไม่มีโน้ตมอบกะในวัน / รอบกะนี้</div>';return;}box.innerHTML=list.map(function(n){var ack=(n.status==='acknowledged'||n.ackBy)?'<span class="hh-ack ok">✓ รับทราบโดย '+_esc(n.ackBy||'-')+'</span>':'<span class="hh-ack wait">⏳ ยังไม่มีคนรับทราบ</span>';return '<div class="hh-note"><div class="hh-r1"><div class="hh-dir">🔄 '+_shLabel(n.fromShift)+' → '+_shLabel(n.toShift)+'</div><div class="hh-tm">🕐 '+(n.time||'')+'</div></div><div class="hh-fr">จาก '+_esc(n.fromGuardName||'-')+'</div><div class="hh-tx">'+_esc(n.note||'')+'</div>'+ack+'</div>';}).join('');}
+function hhRender(){var list=hhData.filter(function(n){return hhShift==='all'||n.fromShift===hhShift;});var box=document.getElementById('hhList');if(!list.length){box.innerHTML='<div class="hh-empty">📝<br>ไม่มีโน้ตมอบกะในวัน / รอบกะนี้</div>';return;}box.innerHTML=list.map(function(n){var ack=(n.status==='acknowledged'||n.ackBy)?'<span class="hh-ack ok">✓ รับทราบโดย '+_esc(n.ackBy||'-')+'</span>':'<span class="hh-ack wait">⏳ ยังไม่มีคนรับทราบ</span>';var _own=(typeof guardInfo!=='undefined'&&guardInfo&&n.id&&n.fromGuardName&&guardInfo.displayName&&String(n.fromGuardName)===String(guardInfo.displayName));var editBtn=_own?'<div style="margin-top:8px;"><button onclick="editHandoverById(\''+n.id+'\')" style="padding:6px 12px;background:#fff;border:1px solid #1565C0;color:#1565C0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">✏️ แก้ไขโน้ต</button></div>':'';return '<div class="hh-note"><div class="hh-r1"><div class="hh-dir">🔄 '+_shLabel(n.fromShift)+' → '+_shLabel(n.toShift)+'</div><div class="hh-tm">🕐 '+(n.time||'')+'</div></div><div class="hh-fr">จาก '+_esc(n.fromGuardName||'-')+'</div><div class="hh-tx">'+_esc(n.note||'')+'</div>'+ack+editBtn+'</div>';}).join('');}
 var swapTo='afternoon';
 function showSwap(){_hideAllMain();var s=document.getElementById('swapScreen');if(s)s.style.display='block';window.scrollTo(0,0);swapInit();}
 function swapInit(){document.getElementById('swDate').value=_fmtTh(_todayStr());document.getElementById('swFrom').textContent=(typeof currentShift!=='undefined'&&currentShift&&_shLabel(currentShift.id))||'-';swapTo='afternoon';document.querySelectorAll('#swSegs .swseg').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-s')===swapTo);});document.getElementById('swReason').value='';}
@@ -2817,6 +2821,76 @@ function evfPhotoPick(input){var f=input.files&&input.files[0];if(!f)return;var 
 function evfSave(){var title=document.getElementById('evfTitleInp').value.trim();var date=document.getElementById('evfDate').value;if(!date){showToast('เลือกวันที่ก่อน','error');return;}if(!title){showToast('ใส่หัวข้องานก่อน','error');return;}var btn=document.getElementById('evfSaveBtn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';var wasEdit=!!evEditId;var p={eventId:evEditId||'',date:date,time:document.getElementById('evfTime').value||'',type:evType,title:title,guestLevel:evLevel,parkingSpot:document.getElementById('evfParking').value||'',details:document.getElementById('evfDetails').value||'',reminderHours:evReminder,userId:(typeof userProfile!=='undefined'&&userProfile)?userProfile.userId:'',userName:(typeof userProfile!=='undefined'&&userProfile)?userProfile.displayName:''};if(evPhotoData)p.photoDataUrl=evPhotoData;api('saveEvent',p,true).then(function(r){if(r&&r.success){if(wasEdit){showToast('✓ แก้ไขงานแล้ว','success');showEvents();}else{showToast('✓ บันทึกแล้ว — เพิ่มงานต่อได้เลย','success');if(window._evCache)window._evCache=null;evOpenForm();}}else{showToast('❌ '+((r&&r.error)||'ผิดพลาด'),'error');btn.disabled=false;btn.textContent='💾 บันทึกงาน — แจ้งทีมทุกคน';}}).catch(function(){showToast('❌ ผิดพลาด','error');btn.disabled=false;btn.textContent='💾 บันทึกงาน — แจ้งทีมทุกคน';});}
 function evfDelete(){if(!evEditId)return;if(!confirm('ลบงานนี้?'))return;api('deleteEvent',{eventId:evEditId},true).then(function(){showToast('ลบแล้ว','success');showEvents();}).catch(function(){showToast('❌ ผิดพลาด','error');});}
 
+// ============ Edit text (Incident / Handover) — two-way edit (T edit) ============
+var editTextCtx = null; // { kind:'incident'|'handover', id }
+function openEditText(kind, id, currentText){
+  editTextCtx = { kind: kind, id: id };
+  document.getElementById('editTextTitle').textContent = (kind==='incident') ? '✏️ แก้ไขข้อความแจ้งเหตุ' : '✏️ แก้ไขโน้ตมอบกะ';
+  var ta = document.getElementById('editTextArea');
+  ta.value = currentText || '';
+  document.getElementById('editTextModal').classList.add('active');
+  setTimeout(function(){ try{ ta.focus(); }catch(e){} }, 60);
+}
+function closeEditTextModal(){
+  var m = document.getElementById('editTextModal');
+  if(m) m.classList.remove('active');
+  editTextCtx = null;
+}
+function _editTextResetBtn(){ var b=document.getElementById('editTextSaveBtn'); if(b){ b.disabled=false; b.textContent='💾 บันทึก'; } }
+async function saveEditText(){
+  if(!editTextCtx) return;
+  var txt = document.getElementById('editTextArea').value.trim();
+  if(!txt){ showToast('กรอกข้อความก่อน', 'error'); return; }
+  var btn = document.getElementById('editTextSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+  try{
+    var r;
+    if(editTextCtx.kind === 'incident'){
+      r = await api('updateIncident', { incidentId: editTextCtx.id, description: txt, userId: userProfile.userId }, true);
+    } else {
+      r = await api('updateHandover', { handoverId: editTextCtx.id, note: txt, userId: userProfile.userId }, true);
+    }
+    var ok = r && (r.success === true || r.ok === true || r.updated === true) && !r.error;
+    if(ok){
+      var kind = editTextCtx.kind;
+      closeEditTextModal();
+      showToast('✓ แก้ไขแล้ว', 'success');
+      if(kind === 'incident'){ if(typeof loadTodayIncidents==='function') loadTodayIncidents(); }
+      else { if(typeof loadHandoverHist==='function') loadHandoverHist(); }
+    } else {
+      showToast('❌ ' + ((r && r.error) || 'แก้ไขไม่สำเร็จ'), 'error');
+      _editTextResetBtn();
+    }
+  } catch(e){
+    showToast('❌ เชื่อมต่อไม่ได้ — ลองใหม่', 'error');
+    _editTextResetBtn();
+  }
+}
+function editIncidentById(id){
+  var it = (window._myIncidents || []).filter(function(x){ return String(x.incidentId)===String(id); })[0];
+  if(it) openEditText('incident', id, it.description || '');
+  else showToast('ไม่พบรายการ', 'error');
+}
+function editHandoverById(id){
+  var arr = (typeof hhData !== 'undefined' && hhData) ? hhData : [];
+  var n = arr.filter(function(x){ return String(x.id)===String(id); })[0];
+  if(n) openEditText('handover', id, n.note || '');
+  else showToast('ไม่พบรายการ', 'error');
+}
+
 </script>
+
+<!-- ============== Edit Text Modal (Incident / Handover) ============== -->
+<div class="modal-overlay" id="editTextModal">
+  <div class="modal">
+    <div class="modal-title" id="editTextTitle">✏️ แก้ไขข้อความ</div>
+    <div class="modal-subtitle">แก้ไขได้เฉพาะรายการที่คุณเป็นผู้บันทึกเอง</div>
+    <textarea id="editTextArea" rows="5" placeholder="พิมพ์ข้อความ..." style="min-height:120px;"></textarea>
+    <div class="modal-buttons">
+      <button class="btn btn-secondary" onclick="closeEditTextModal()">ยกเลิก</button>
+      <button class="btn btn-primary" id="editTextSaveBtn" onclick="saveEditText()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
