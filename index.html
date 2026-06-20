@@ -822,7 +822,12 @@
       <div style="font-size:14px;font-weight:600;color:#E65100;margin-bottom:8px;">🚨 Incident วันนี้ที่คุณแจ้ง</div>
       <div id="todayIncidentsList"></div>
     </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button id="rhTabShift" onclick="rhSwitch('shift')" style="flex:1;padding:9px;border:1px solid #D6DEEA;border-radius:10px;font-size:13px;font-weight:600;background:#1A3D6B;color:#fff;cursor:pointer;font-family:inherit;">🛡️ รายงานกะ</button>
+      <button id="rhTabDaily" onclick="rhSwitch('daily')" style="flex:1;padding:9px;border:1px solid #D6DEEA;border-radius:10px;font-size:13px;font-weight:600;background:#fff;color:#1A3D6B;cursor:pointer;font-family:inherit;">📑 รายงานประจำวัน</button>
+    </div>
     <div id="historyList"></div>
+    <div id="dailyReportPane" style="display:none;"></div>
   </div>
 </div>
 
@@ -1429,6 +1434,44 @@ async function regenerateReport(date, shiftId, btn) {
     btn.textContent = orig;
     btn.disabled = false;
   }
+}
+
+// ============ Report history sub-tabs (shift / daily) ============
+function rhSwitch(which){
+  var isShift = which==='shift';
+  var hl=document.getElementById('historyList'), dp=document.getElementById('dailyReportPane');
+  if(hl) hl.style.display = isShift?'block':'none';
+  if(dp) dp.style.display = isShift?'none':'block';
+  var t1=document.getElementById('rhTabShift'), t2=document.getElementById('rhTabDaily');
+  if(t1){ t1.style.background = isShift?'#1A3D6B':'#fff'; t1.style.color = isShift?'#fff':'#1A3D6B'; }
+  if(t2){ t2.style.background = isShift?'#fff':'#1A3D6B'; t2.style.color = isShift?'#1A3D6B':'#fff'; }
+  if(!isShift) renderDailyReportPane();
+}
+function renderDailyReportPane(){
+  var pane=document.getElementById('dailyReportPane');
+  if(!pane) return;
+  var today=new Date();
+  var html='<div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">เลือกวันเพื่อ <b>สร้าง &amp; ส่งรายงานประจำวัน</b> เข้าไลน์ (ผู้จัดการ + รปภ.ทุกคน) — เผื่อกรณีระบบไม่ส่งอัตโนมัติ</div>';
+  for(var i=1;i<=14;i++){
+    var d=new Date(today.getTime()-i*86400000);
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var label=d.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric',timeZone:'Asia/Bangkok'});
+    html+='<div class="cp" style="display:flex;justify-content:space-between;align-items:center;">'
+      +'<div style="font-size:13px;font-weight:500;color:var(--c-navy);">📅 '+label+'</div>'
+      +'<button onclick="genDailyManual(\''+ds+'\',this)" style="padding:8px 12px;background:#fff;border:2px solid #1565C0;color:#1565C0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📑 สร้าง &amp; ส่ง</button>'
+      +'</div>';
+  }
+  pane.innerHTML=html;
+}
+async function genDailyManual(date, btn){
+  if(!confirm('สร้าง & ส่งรายงานประจำวันของ '+date+' เข้าไลน์?\n(ผู้จัดการ + รปภ.ทุกคนจะได้รับ)')) return;
+  var orig=btn.textContent;
+  btn.textContent='⏳ กำลังสร้าง...'; btn.disabled=true;
+  try{
+    var r=await api('genDailyReport', { date: date }, true);
+    if(r && r.success){ showToast('✓ ส่งรายงานวันที่ '+(r.date||date)+' เข้าไลน์แล้ว', 'success'); btn.textContent='✓ ส่งแล้ว'; }
+    else { showToast('❌ '+((r&&r.error)||'สร้างไม่สำเร็จ'), 'error'); btn.textContent=orig; btn.disabled=false; }
+  }catch(e){ showToast('❌ เชื่อมต่อไม่ได้ — ลองใหม่', 'error'); btn.textContent=orig; btn.disabled=false; }
 }
 
 function populateIncidentLocations() {
