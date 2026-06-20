@@ -596,6 +596,25 @@
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🛗 รถในลิฟต์จอดรถ</div><div style="font-size:11px;color:#888;">Cars in parking lift</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpLift',-1)">−</button><div class="sval2" id="cpLift">0</div><button class="sbtn2 p" onclick="cpStep('cpLift',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🏍️ มอเตอร์ไซค์</div><div style="font-size:11px;color:#888;">Motorcycles</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpMoto',-1)">−</button><div class="sval2" id="cpMoto">0</div><button class="sbtn2 p" onclick="cpStep('cpMoto',1)">+</button></div></div>
       <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="cpPick(this)"></label></div>
+      <div id="ovWrap" style="display:none;">
+        <div class="reccard">
+          <div class="recttl">🌙 รถจอดค้างคืน (เฉพาะกะดึก)</div>
+          <div style="font-size:11px;color:#888;margin:-4px 0 10px;">ใส่ทีละคัน · ทะเบียน + รูป บังคับทุกคัน · แก้ไข/ลบได้</div>
+          <div id="ovList"></div>
+          <button class="recbtn" style="background:#5a6172;margin:6px 0 12px;" onclick="ovConfirmNone()">✓ คืนนี้ไม่มีรถจอดค้างคืน</button>
+          <div class="recfl">ทะเบียน / รายละเอียดรถ <span style="color:#c0392b;">*</span></div><input id="ovPlate" class="recfi" placeholder="เช่น 1กก 1234 / Benz สีดำ">
+          <div class="recfl">ประเภท</div>
+          <select id="ovType" class="recfi" onchange="ovTypeChange()">
+            <option value="guest">แขกพัก (ระบุห้อง)</option>
+            <option value="unknown">ไม่ทราบ</option>
+            <option value="visitor">แขกมาติดต่อ / อื่นๆ</option>
+          </select>
+          <div id="ovRoomWrap"><div class="recfl">เลขห้องพัก</div><input id="ovRoom" class="recfi" placeholder="เช่น 1204"></div>
+          <div id="ovNoteWrap" style="display:none;"><div class="recfl">หมายเหตุ</div><input id="ovNote" class="recfi" placeholder="เช่น มารับของ / ติดต่อพนักงาน"></div>
+          <div class="recfl">📸 รูปภาพ <span style="color:#c0392b;">*</span> (บังคับ)</div><div class="thmbs" id="ovThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="ovPick(this)"></label>
+        </div>
+        <button id="ovSubmitBtn" class="recbtn" onclick="ovSubmit()">➕ เพิ่มรถคันนี้</button>
+      </div>
       <div id="cpSaveInd" style="text-align:center;font-size:12px;color:#27ae60;font-weight:700;margin:10px 0 4px;">💾 บันทึกอัตโนมัติ</div>
       <button class="recbtn" onclick="advanceFlow()">✓ เสร็จ — กลับไปลิสต์เดินตรวจ</button>
     </div>
@@ -2662,7 +2681,7 @@ async function _recPick(inp, arr, thumbId, max){
 }
 function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
   el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+_imgUrl(d)+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
-function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
+function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos,ovThumbs:OV_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
 /* Control Room */
 function _applyLiftState(){ document.querySelectorAll('#crScreen .liftb').forEach(function(btn){ var k=((btn.querySelector('.lid')||{}).textContent)||''; var v=CR_elevSt[k]; var ok=!(v===false||v==='down'||v==='DOWN'||v==='เสีย'); btn.className='liftb '+(ok?'ok':'bad'); var st=btn.querySelector('.lst'); if(st)st.textContent=ok?'ปกติ':'เสีย'; }); }
 async function showControlRoom(){ _hideAllMain(); var s=document.getElementById('crScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
@@ -2733,6 +2752,7 @@ async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpS
   try{ var r=await api('getCarParkToday',{shift:_shiftId(),userId:_uid()}); var recs=(r&&r.records)||[];
     if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
   }catch(e){}
+  var ow=document.getElementById('ovWrap'); var isNight=(_shiftId()==='night'); if(ow)ow.style.display=isNight?'block':'none'; if(isNight){ OV_EDIT_ROW=0; OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); document.getElementById('ovSubmitBtn').textContent='➕ เพิ่มรถคันนี้'; ovTypeChange(); ovLoad(); }
 }
 function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; cpScheduleSave(); }
 async function cpPick(inp){ await _recPick(inp, CP_photos, 'cpThumbs', 3); cpScheduleSave(); }
@@ -2758,6 +2778,40 @@ async function cpSubmit(){
     if(r&&r.success){ showToast('✅ บันทึก Car Park แล้ว','success'); CP_photos=[]; _renderThumbs(CP_photos,'cpThumbs'); advanceFlow(); }
     else { showToast('บันทึกไม่สำเร็จ','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='💾 บันทึก Car Park'; }
+}
+/* Overnight cars (night shift only) */
+var OV_photos=[]; var OV_EDIT_ROW=0; window.OV_LIST=[];
+function ovTypeChange(){ var t=document.getElementById('ovType').value; document.getElementById('ovRoomWrap').style.display=(t==='guest')?'block':'none'; document.getElementById('ovNoteWrap').style.display=(t==='visitor')?'block':'none'; }
+function ovPick(inp){ _recPick(inp, OV_photos, 'ovThumbs', 3); }
+async function ovLoad(){
+  try{ var r=await api('getOvernightCarsToday',{shift:_shiftId(),userId:_uid()}); var arr=(r&&r.cars)||[]; window.OV_LIST=arr;
+    var list=document.getElementById('ovList'); if(!list)return; var act='style="cursor:pointer;font-size:17px;padding:3px 5px;flex-shrink:0;"';
+    list.innerHTML = arr.length ? arr.map(function(c,i){
+      if(String(c.plate).indexOf('ไม่มีรถค้างคืน')>-1){ return '<div class="cocard" style="border-color:#bfe9dd;background:#f0fbf6;display:flex;align-items:center;"><b style="color:#0f8c74;flex:1;">✓ ยืนยันแล้ว: ไม่มีรถจอดค้างคืน</b><span '+act+' onclick="ovDel('+c.row+')">🗑</span></div>'; }
+      var typ=(c.vtype==='guest')?('แขกพัก · ห้อง '+(c.room||'-')):((c.vtype==='unknown')?'ไม่ทราบ':('มาติดต่อ/อื่นๆ'+(c.note?' · '+c.note:'')));
+      return '<div class="cocard"><div style="display:flex;align-items:flex-start;gap:8px;"><div style="flex:1;min-width:0;"><b>'+(i+1)+'. '+_esc(c.plate)+'</b><div class="com">'+_esc(typ)+(c.photos&&c.photos.length?' · 📷 '+c.photos.length:'')+'</div></div><span '+act+' onclick="ovEdit('+i+')">✎</span><span '+act+' style="color:#c0392b" onclick="ovDel('+c.row+')">🗑</span></div></div>';
+    }).join('') : '<div class="coempty">ยังไม่มีรถค้างคืนในกะนี้</div>';
+  }catch(e){}
+}
+function ovEdit(i){ var c=(window.OV_LIST||[])[i]; if(!c||!c.row||c.row<2){ showToast('แก้ไขรายการนี้ไม่ได้','error'); return; }
+  document.getElementById('ovPlate').value=c.plate||''; document.getElementById('ovType').value=c.vtype||'guest'; ovTypeChange();
+  document.getElementById('ovRoom').value=c.room||''; document.getElementById('ovNote').value=c.note||'';
+  OV_photos=(c.photos||[]).slice(); _renderThumbs(OV_photos,'ovThumbs'); OV_EDIT_ROW=c.row;
+  document.getElementById('ovSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('ovPlate').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+}
+async function ovDel(row){ if(!row||row<2){ showToast('ลบรายการนี้ไม่ได้','error'); return; } if(!confirm('ลบรถคันนี้?'))return; try{ var r=await api('deleteOvernightCar',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); ovLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function ovConfirmNone(){ if(!confirm('ยืนยันว่าคืนนี้ไม่มีรถจอดค้างคืน?'))return; try{ var r=await api('saveOvernightCar',{userId:_uid(),userName:_uname(),shift:_shiftId(),plate:'(ไม่มีรถค้างคืน)',vtype:'',room:'',note:'',photos:[]},true); if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีรถค้างคืนแล้ว','success'); ovLoad(); } else showToast('บันทึกไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function ovSubmit(){
+  var plate=document.getElementById('ovPlate').value.trim(); if(!plate){ showToast('กรอกทะเบียน / รายละเอียดรถ','error'); return; }
+  if(!OV_photos.length){ showToast('แนบรูปอย่างน้อย 1 รูป','error'); return; }
+  var btn=document.getElementById('ovSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  var p={ userId:_uid(), userName:_uname(), shift:_shiftId(), plate:plate, vtype:document.getElementById('ovType').value, room:document.getElementById('ovRoom').value, note:document.getElementById('ovNote').value, photos:OV_photos };
+  if(OV_EDIT_ROW){ p.row=OV_EDIT_ROW; }
+  try{ var r=await api('saveOvernightCar',p,true);
+    if(r&&r.success){ showToast(OV_EDIT_ROW?'✅ แก้ไขแล้ว':'✅ เพิ่มรถแล้ว','success'); OV_EDIT_ROW=0; ['ovPlate','ovRoom','ovNote'].forEach(function(id){document.getElementById(id).value='';}); document.getElementById('ovType').value='guest'; ovTypeChange(); OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); ovLoad(); }
+    else { showToast('บันทึกไม่สำเร็จ','error'); }
+    btn.disabled=false; btn.textContent='➕ เพิ่มรถคันนี้';
+  }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='➕ เพิ่มรถคันนี้'; }
 }
 /* Contractor */
 function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); CO_EDIT_ROW=0; CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); var sb=document.getElementById('coSubmitBtn'); if(sb)sb.textContent='➕ เพิ่มผู้รับเหมารายนี้'; var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
