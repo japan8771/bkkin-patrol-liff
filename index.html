@@ -1468,7 +1468,7 @@ async function genDailyManual(date, btn){
   var orig=btn.textContent;
   btn.textContent='⏳ กำลังสร้าง...'; btn.disabled=true;
   try{
-    var r=await api('genDailyReport', { date: date }, true);
+    var r=await api('genDailyReport', { date: date, force: true }, true);
     if(r && r.success){ showToast('✓ ส่งรายงานวันที่ '+(r.date||date)+' เข้าไลน์แล้ว', 'success'); btn.textContent='✓ ส่งแล้ว'; }
     else { showToast('❌ '+((r&&r.error)||'สร้างไม่สำเร็จ'), 'error'); btn.textContent=orig; btn.disabled=false; }
   }catch(e){ showToast('❌ เชื่อมต่อไม่ได้ — ลองใหม่', 'error'); btn.textContent=orig; btn.disabled=false; }
@@ -2356,6 +2356,7 @@ async function doEndPatrol() {
         document.getElementById('reportedLink').style.display = 'none';
       }
       showToast('✓ ส่งรายงานสำเร็จ — Manager ได้รับแล้ว', 'success');
+      if (currentShift && currentShift.id === 'night') { promptDailyAfterNight(); }
     } else {
       showToast('❌ ' + (r.error || 'ผิดพลาด'), 'error');
       document.getElementById('endPatrolBtn').textContent = '🏁 จบกะ + ส่งรายงาน';
@@ -2366,6 +2367,19 @@ async function doEndPatrol() {
     document.getElementById('endPatrolBtn').textContent = '🏁 จบกะ + ส่งรายงาน';
     document.getElementById('endPatrolBtn').disabled = false;
   }
+}
+
+// เด้งถามตอนกะดึกจบ: ส่งรายงานประจำวันเลยไหม (cron 05:00 เป็น fallback, กันส่งซ้ำอัตโนมัติ)
+async function promptDailyAfterNight(){
+  try{
+    var d=new Date(Date.now()-86400000);
+    var ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    var ok=await _confirm('🌙 กะดึกจบแล้ว\n\nส่งรายงานประจำวันของ '+ds+' เข้าไลน์เลยไหม?\n(ถ้าไม่กด ระบบจะส่งให้เองตอน 05:00)');
+    if(!ok) return;
+    var r=await api('genDailyReport', { date: ds }, true);
+    if(r && r.success){ showToast('✓ ส่งรายงานประจำวันแล้ว', 'success'); }
+    else { showToast('❌ '+((r&&r.error)||'ส่งไม่สำเร็จ'), 'error'); }
+  }catch(e){ showToast('❌ เชื่อมต่อไม่ได้', 'error'); }
 }
 
 // confirm dialog (yes/no) — เตือนก่อนทำสิ่งที่อาจพลาด
