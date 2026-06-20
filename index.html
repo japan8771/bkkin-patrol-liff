@@ -2755,7 +2755,7 @@ async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpS
   var ow=document.getElementById('ovWrap'); var isNight=(_shiftId()==='night'); if(ow)ow.style.display=isNight?'block':'none'; if(isNight){ OV_EDIT_ROW=0; OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); document.getElementById('ovSubmitBtn').textContent='➕ เพิ่มรถคันนี้'; ovTypeChange(); ovLoad(); }
 }
 function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; cpScheduleSave(); }
-async function cpPick(inp){ await _recPick(inp, CP_photos, 'cpThumbs', 3); cpScheduleSave(); }
+async function cpPick(inp){ await _recPick(inp, CP_photos, 'cpThumbs', 10); cpScheduleSave(); }
 // ===== Auto-save: Car Park =====
 let __cpSaveTimer=null, __cpSaving=false;
 function cpScheduleSave(){ var ind=document.getElementById('cpSaveInd'); if(ind){ind.textContent='💾 กำลังบันทึก...';ind.style.color='#f39c12';} clearTimeout(__cpSaveTimer); __cpSaveTimer=setTimeout(cpAutoSave, 1000); }
@@ -2782,7 +2782,7 @@ async function cpSubmit(){
 /* Overnight cars (night shift only) */
 var OV_photos=[]; var OV_EDIT_ROW=0; window.OV_LIST=[];
 function ovTypeChange(){ var t=document.getElementById('ovType').value; document.getElementById('ovRoomWrap').style.display=(t==='guest')?'block':'none'; document.getElementById('ovNoteWrap').style.display=(t==='visitor')?'block':'none'; }
-function ovPick(inp){ _recPick(inp, OV_photos, 'ovThumbs', 3); }
+function ovPick(inp){ _recPick(inp, OV_photos, 'ovThumbs', 10); }
 async function ovLoad(){
   try{ var r=await api('getOvernightCarsToday',{shift:_shiftId(),userId:_uid()}); var arr=(r&&r.cars)||[]; window.OV_LIST=arr;
     var list=document.getElementById('ovList'); if(!list)return; var act='style="cursor:pointer;font-size:17px;padding:3px 5px;flex-shrink:0;"';
@@ -2815,7 +2815,7 @@ async function ovSubmit(){
 }
 /* Contractor */
 function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); CO_EDIT_ROW=0; CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); var sb=document.getElementById('coSubmitBtn'); if(sb)sb.textContent='➕ เพิ่มผู้รับเหมารายนี้'; var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
-function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 3); }
+function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 10); }
 async function coConfirmNone(){
   if(!confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?'))return;
   try{ var r=await api('saveContractor',{userId:_uid(),userName:_uname(),shift:_shiftId(),company:'(ไม่มีผู้รับเหมา)',people:0,workStart:'',workEnd:'',area:'',detail:'',ackBy:_uname(),photos:[]},true);
