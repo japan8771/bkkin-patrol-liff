@@ -656,7 +656,7 @@
         </div>
         <div class="recfl">รายละเอียด</div><textarea id="slDetail" class="recfi" style="min-height:64px;" oninput="slScheduleSave()" placeholder="บันทึกสิ่งที่เกิดขึ้น / สิ่งที่ทำ"></textarea>
         <div class="recfl">ผู้เกี่ยวข้อง (ถ้ามี)</div><input id="slPeople" class="recfi" oninput="slScheduleSave()" placeholder="เช่น DM คุณ A">
-        <div class="recfl">📸 รูปภาพ (ถ้ามี) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="slThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" style="display:none;" onchange="slPick(this)"></label>
+        <div class="recfl">📸 รูปภาพ (ถ้ามี สูงสุด 10) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="slThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" multiple style="display:none;" onchange="slPick(this)"></label>
         <div class="recfl" style="margin-top:10px;">สถานะ</div>
         <div style="display:flex;gap:8px;margin:4px 0 8px;">
           <button type="button" id="slStClosed" onclick="slSetStatus(false)" style="flex:1;padding:10px;border-radius:9px;border:none;background:#1B7A4B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">✓ ปิดจบแล้ว</button>
@@ -1452,7 +1452,7 @@ async function renderHistory() {
 }
 
 async function regenerateReport(date, shiftId, btn) {
-  if (!confirm('สร้างรายงาน PDF ใหม่สำหรับ ' + date + ' (' + shiftId + ')?\nหลังสร้างเสร็จ ระบบจะเปิด PDF ให้ดูทันที')) return;
+  if (!(await _confirm('สร้างรายงาน PDF ใหม่สำหรับ ' + date + ' (' + shiftId + ')?\nหลังสร้างเสร็จ ระบบจะเปิด PDF ให้ดูทันที'))) return;
   const orig = btn.textContent;
   btn.textContent = '⏳ กำลังสร้าง...';
   btn.disabled = true;
@@ -1524,7 +1524,7 @@ async function renderDailyReportPane(){
   pane.innerHTML=html;
 }
 async function genDailyManual(date, btn){
-  if(!confirm('สร้าง & ส่งรายงานประจำวันของ '+date+' เข้าไลน์?\n(ผู้จัดการ + รปภ.ทุกคนจะได้รับ)')) return;
+  if(!(await _confirm('สร้าง & ส่งรายงานประจำวันของ '+date+' เข้าไลน์?\n(ผู้จัดการ + รปภ.ทุกคนจะได้รับ)'))) return;
   var orig=btn.textContent;
   btn.textContent='⏳ กำลังสร้าง...'; btn.disabled=true;
   try{
@@ -1700,7 +1700,7 @@ function toDriveThumbUrl(url) {
 
 async function onDeleteExistingPhoto(photoUrl, btn) {
   if (!editLogId) return;
-  if (!confirm('ลบรูปนี้? (ลบแล้วเอาคืนไม่ได้)')) return;
+  if (!(await _confirm('ลบรูปนี้? (ลบแล้วเอาคืนไม่ได้)'))) return;
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
   try {
     const r = await api('deleteCheckpointPhoto', {
@@ -2342,9 +2342,9 @@ function closeHandoverModal() {
   // ปิด popup = ยกเลิก เสมอ (ไม่จบกะ) — กันจบกะโดยไม่ตั้งใจ
   document.getElementById('handoverModal').classList.remove('active');
 }
-function skipHandoverAndEnd() {
+async function skipHandoverAndEnd() {
   if (handoverMode === 'endshift') {
-    if (!confirm('ข้ามการฝากกะ แล้วจบกะ + ส่งรายงานเลย?')) return;
+    if (!(await _confirm('ข้ามการฝากกะ แล้วจบกะ + ส่งรายงานเลย?'))) return;
     document.getElementById('handoverModal').classList.remove('active');
     doEndPatrol();
   } else {
@@ -2396,7 +2396,7 @@ async function confirmEndPatrol() {
   }
   if (!(_cpr && _cpr.records && _cpr.records.length)) { showToast('🅿️ บันทึก Car Park ก่อนจบกะ', 'error'); showCarPark(); return; }
   if (!(_cor && _cor.contractors && _cor.contractors.length)) { showToast('👷 บันทึก Contractor หรือกดยืนยันไม่มีผู้รับเหมา ก่อนจบกะ', 'error'); showContractor(); return; }
-  if (!confirm('ยืนยันจบกะและส่งรายงานให้ Manager?\n\nรายงานจะถูกสร้างเป็น PDF พร้อมรูปทุกจุด')) return;
+  if (!(await _confirm('ยืนยันจบกะและส่งรายงานให้ Manager?\n\nรายงานจะถูกสร้างเป็น PDF พร้อมรูปทุกจุด'))) return;
   // ถามฝากกะก่อน (โหมดจบกะ)
   handoverMode = 'endshift';
   openHandoverModal();
@@ -2612,7 +2612,7 @@ function renderIncEditExisting(urls) {
 }
 
 async function onDeleteIncidentPhoto(photoUrl, btn) {
-  if (!confirm('ลบรูปนี้?')) return;
+  if (!(await _confirm('ลบรูปนี้?'))) return;
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
   try {
     const r = await api('deleteIncidentPhoto', { userId: userProfile.userId, incidentId: activeIncidentId, photoUrl: photoUrl }, true);
@@ -2679,7 +2679,7 @@ function menuHandover(){
   handoverMode = 'note';
   try{ openHandoverModal(); }catch(e){}
 }
-function menuSoon(n){alert(n+' — กำลังพัฒนา จะเปิดให้ใช้เร็ว ๆ นี้ครับ');}
+function menuSoon(n){showToast(n+' — กำลังพัฒนา จะเปิดให้ใช้เร็วๆ นี้ครับ','info');}
 
 
 function _hideExtra(){['handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','crScreen','cpScreen','coScreen','slScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});}
@@ -2829,8 +2829,8 @@ function ovEdit(i){ var c=(window.OV_LIST||[])[i]; if(!c||!c.row||c.row<2){ show
   OV_photos=(c.photos||[]).slice(); _renderThumbs(OV_photos,'ovThumbs'); OV_EDIT_ROW=c.row;
   document.getElementById('ovSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('ovPlate').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
 }
-async function ovDel(row){ if(!row||row<2){ showToast('ลบรายการนี้ไม่ได้','error'); return; } if(!confirm('ลบรถคันนี้?'))return; try{ var r=await api('deleteOvernightCar',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); ovLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
-async function ovConfirmNone(){ if(!confirm('ยืนยันว่าคืนนี้ไม่มีรถจอดค้างคืน?'))return; try{ var r=await api('saveOvernightCar',{userId:_uid(),userName:_uname(),shift:_shiftId(),plate:'(ไม่มีรถค้างคืน)',vtype:'',room:'',note:'',photos:[]},true); if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีรถค้างคืนแล้ว','success'); ovLoad(); } else showToast('บันทึกไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function ovDel(row){ if(!row||row<2){ showToast('ลบรายการนี้ไม่ได้','error'); return; } if(!(await _confirm('ลบรถคันนี้?')))return; try{ var r=await api('deleteOvernightCar',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); ovLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function ovConfirmNone(){ if(!(await _confirm('ยืนยันว่าคืนนี้ไม่มีรถจอดค้างคืน?')))return; try{ var r=await api('saveOvernightCar',{userId:_uid(),userName:_uname(),shift:_shiftId(),plate:'(ไม่มีรถค้างคืน)',vtype:'',room:'',note:'',photos:[]},true); if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีรถค้างคืนแล้ว','success'); ovLoad(); } else showToast('บันทึกไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
 async function ovSubmit(){
   var plate=document.getElementById('ovPlate').value.trim(); if(!plate){ showToast('กรอกทะเบียน / รายละเอียดรถ','error'); return; }
   if(!OV_photos.length){ showToast('แนบรูปอย่างน้อย 1 รูป','error'); return; }
@@ -2847,7 +2847,7 @@ async function ovSubmit(){
 function showContractor(){ _hideAllMain(); var s=document.getElementById('coScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); CO_EDIT_ROW=0; CO_photos=[]; _renderThumbs(CO_photos,'coThumbs'); var sb=document.getElementById('coSubmitBtn'); if(sb)sb.textContent='➕ เพิ่มผู้รับเหมารายนี้'; var a=document.getElementById('coAck'); if(a&&!a.value)a.value=_uname(); coLoad(); }
 function coPick(inp){ _recPick(inp, CO_photos, 'coThumbs', 10); }
 async function coConfirmNone(){
-  if(!confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?'))return;
+  if(!(await _confirm('ยืนยันว่ากะนี้ไม่มีผู้รับเหมาเข้าทำงาน?')))return;
   try{ var r=await api('saveContractor',{userId:_uid(),userName:_uname(),shift:_shiftId(),company:'(ไม่มีผู้รับเหมา)',people:0,workStart:'',workEnd:'',area:'',detail:'',ackBy:_uname(),photos:[]},true);
     if(r&&r.success){ showToast('✓ บันทึกว่าไม่มีผู้รับเหมาแล้ว','success'); coLoad(); setTimeout(function(){ advanceFlow(); }, 700); } else showToast('บันทึกไม่สำเร็จ','error');
   }catch(e){ showToast('ผิดพลาด','error'); }
@@ -2868,7 +2868,7 @@ function coEdit(i){ var c=(window.CO_LIST||[])[i]; if(!c)return; if(!c.row||c.ro
   CO_photos=(c.photos||[]).slice(); _renderThumbs(CO_photos,'coThumbs'); CO_EDIT_ROW=c.row;
   document.getElementById('coSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('coCompany').scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
 }
-async function coDel(row){ if(!row||row<2){ showToast('ลบรายการนี้ไม่ได้','error'); return; } if(!confirm('ลบรายการนี้?'))return; try{ var r=await api('deleteContractor',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); coLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function coDel(row){ if(!row||row<2){ showToast('ลบรายการนี้ไม่ได้','error'); return; } if(!(await _confirm('ลบรายการนี้?')))return; try{ var r=await api('deleteContractor',{row:row},true); if(r&&r.success){ showToast('ลบแล้ว','success'); coLoad(); } else showToast('ลบไม่สำเร็จ','error'); }catch(e){ showToast('ผิดพลาด','error'); } }
 async function coSubmit(){
   var co=document.getElementById('coCompany').value.trim(); if(!co){ showToast('ใส่ชื่อบริษัท','error'); return; }
   var btn=document.getElementById('coSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
@@ -2933,8 +2933,8 @@ function slEdit(id){ var e=null;for(var i=0;i<SL_list.length;i++)if(String(SL_li
   SL_EDIT_ID=e.logId; SL_cat=e.category||'other'; slRenderCats(); document.getElementById('slTitle').value=e.title||''; document.getElementById('slTime').value=e.time||''; document.getElementById('slLoc').value=e.location||''; document.getElementById('slDetail').value=e.detail||''; document.getElementById('slPeople').value=e.people||''; SL_photos=(e.photos||[]).slice(); _renderThumbs(SL_photos,'slThumbs'); slSetStatus(e.status==='open');
   document.getElementById('slFormTitle').textContent='✏️ แก้ไขเหตุการณ์'; document.getElementById('slSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('slFormTitle').scrollIntoView({behavior:'smooth',block:'center'});}catch(x){}
 }
-async function slClose(id){ if(!confirm('ยืนยันปิดจ๊อบนี้?'))return; try{ var r=await api('closeSecurityLog',{logId:id,userId:_uid(),userName:_uname()},true); if(r&&r.success){ showToast('✓ ปิดจ๊อบแล้ว','success'); slLoad(); } else showToast('❌ '+((r&&r.error)||'ปิดไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
-async function slDel(id){ if(!confirm('ลบบันทึกนี้?'))return; try{ var r=await api('deleteSecurityLog',{logId:id,userId:_uid()},true); if(r&&r.success){ showToast('ลบแล้ว','success'); if(String(SL_EDIT_ID)===String(id))slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'ลบไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function slClose(id){ if(!(await _confirm('ยืนยันปิดจ๊อบนี้?')))return; try{ var r=await api('closeSecurityLog',{logId:id,userId:_uid(),userName:_uname()},true); if(r&&r.success){ showToast('✓ ปิดจ๊อบแล้ว','success'); slLoad(); } else showToast('❌ '+((r&&r.error)||'ปิดไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function slDel(id){ if(!(await _confirm('ลบบันทึกนี้?')))return; try{ var r=await api('deleteSecurityLog',{logId:id,userId:_uid()},true); if(r&&r.success){ showToast('ลบแล้ว','success'); if(String(SL_EDIT_ID)===String(id))slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'ลบไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
 async function slSubmit(){
   var title=(document.getElementById('slTitle').value||'').trim(); if(!title){ showToast('ใส่หัวข้อก่อน','error'); return; }
   clearTimeout(__slTimer);
@@ -3036,7 +3036,7 @@ function evfSetLevel(l){evLevel=l;evfSyncSegs();}
 function evfSetRem(r){evReminder=r;evfSyncSegs();}
 function evfPhotoPick(input){var f=input.files&&input.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(e){var img=new Image();img.onload=function(){var max=1280,w=img.width,h=img.height;if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);evPhotoData=c.toDataURL('image/jpeg',0.8);var t=document.getElementById('evfPhotoThumb');t.style.display='block';t.innerHTML='<img src="'+evPhotoData+'" style="width:64px;height:64px;border-radius:11px;object-fit:cover;">';};img.src=e.target.result;};rd.readAsDataURL(f);}
 function evfSave(){var title=document.getElementById('evfTitleInp').value.trim();var date=document.getElementById('evfDate').value;if(!date){showToast('เลือกวันที่ก่อน','error');return;}if(!title){showToast('ใส่หัวข้องานก่อน','error');return;}var btn=document.getElementById('evfSaveBtn');btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';var wasEdit=!!evEditId;var p={eventId:evEditId||'',date:date,time:document.getElementById('evfTime').value||'',type:evType,title:title,guestLevel:evLevel,parkingSpot:document.getElementById('evfParking').value||'',details:document.getElementById('evfDetails').value||'',reminderHours:evReminder,userId:(typeof userProfile!=='undefined'&&userProfile)?userProfile.userId:'',userName:(typeof userProfile!=='undefined'&&userProfile)?userProfile.displayName:''};if(evPhotoData)p.photoDataUrl=evPhotoData;api('saveEvent',p,true).then(function(r){if(r&&r.success){if(wasEdit){showToast('✓ แก้ไขงานแล้ว','success');showEvents();}else{showToast('✓ บันทึกแล้ว — เพิ่มงานต่อได้เลย','success');if(window._evCache)window._evCache=null;evOpenForm();}}else{showToast('❌ '+((r&&r.error)||'ผิดพลาด'),'error');btn.disabled=false;btn.textContent='💾 บันทึกงาน — แจ้งทีมทุกคน';}}).catch(function(){showToast('❌ ผิดพลาด','error');btn.disabled=false;btn.textContent='💾 บันทึกงาน — แจ้งทีมทุกคน';});}
-function evfDelete(){if(!evEditId)return;if(!confirm('ลบงานนี้?'))return;api('deleteEvent',{eventId:evEditId},true).then(function(){showToast('ลบแล้ว','success');showEvents();}).catch(function(){showToast('❌ ผิดพลาด','error');});}
+async function evfDelete(){if(!evEditId)return;if(!(await _confirm('ลบงานนี้?')))return;api('deleteEvent',{eventId:evEditId},true).then(function(){showToast('ลบแล้ว','success');showEvents();}).catch(function(){showToast('❌ ผิดพลาด','error');});}
 
 // ============ Edit text (Incident / Handover) — two-way edit (T edit) ============
 var editTextCtx = null; // { kind:'incident'|'handover', id }
