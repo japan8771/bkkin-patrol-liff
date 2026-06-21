@@ -405,6 +405,7 @@
       <button class="mtile" onclick="menuHandover()"><span class="mic">📝</span><span class="mlb">มอบกะ</span><span class="mds">ฝากโน้ตให้กะถัดไป</span></button>
       <button class="mtile" onclick="checkGps()"><span class="mic">📍</span><span class="mlb">ตรวจ GPS</span><span class="mds">เช็กตำแหน่ง + ความแม่นยำ</span></button>
       <button class="mtile" onclick="showSwap()"><span class="mic">🔄</span><span class="mlb">เปลี่ยนกะ</span><span class="mds">ขอสลับ/เปลี่ยนกะ</span></button>
+      <button class="mtile" onclick="showSecLog()"><span class="mnew">ใหม่</span><span class="mic">📓</span><span class="mlb">บันทึกเหตุการณ์</span><span class="mds">Security Log / OB — งานอื่นๆ ระหว่างกะ</span></button>
     </div>
     <div class="mgrid" style="margin-top:11px;">
       <!-- Control Room / Car Park / Contractor ย้ายไปรวมในชุดเดินตรวจแล้ว (ไม่มีไทล์แยก) -->
@@ -636,6 +637,35 @@
         <div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="coThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="coPick(this)"></label>
       </div>
       <button id="coSubmitBtn" class="recbtn" onclick="coSubmit()">➕ เพิ่มผู้รับเหมารายนี้</button>
+    </div>
+  </div>
+
+  <div id="slScreen" style="display:none;">
+    <div class="subhdr"><button class="subback" onclick="showHomeMenu()">‹</button><div><div class="subt">📓 Security Log · บันทึกเหตุการณ์</div><div class="subs">งานอื่นๆ ระหว่างกะ · เห็นทุกกะในวันนี้</div></div></div>
+    <div style="padding:14px;">
+      <div style="font-size:11px;color:#8a5a00;background:#fff6e5;border:1px solid #f0e0bf;border-radius:8px;padding:7px 10px;margin-bottom:12px;line-height:1.5;">📝 พิมพ์ไทยได้เลย ระบบแปลอังกฤษให้ในรายงาน · งาน "ติดตามต่อ" จะเด้งต่อทุกวันจนกว่าจะปิด</div>
+      <div id="slList"></div>
+      <div class="reccard">
+        <div class="recttl" id="slFormTitle">➕ บันทึกเหตุการณ์ใหม่</div>
+        <div class="recfl">ประเภท</div>
+        <div id="slCats" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+        <div class="recfl">หัวข้อ <span style="color:#c0392b;">*</span></div><input id="slTitle" class="recfi" oninput="slScheduleSave()" placeholder="เช่น ตรวจห้อง 1508 ร่วมกับ DM">
+        <div style="display:flex;gap:8px;">
+          <div style="flex:0 0 116px;"><div class="recfl">เวลา</div><input id="slTime" class="recfi" type="time" oninput="slScheduleSave()"></div>
+          <div style="flex:1;"><div class="recfl">สถานที่</div><input id="slLoc" class="recfi" oninput="slScheduleSave()" placeholder="เช่น ชั้น 15"></div>
+        </div>
+        <div class="recfl">รายละเอียด</div><textarea id="slDetail" class="recfi" style="min-height:64px;" oninput="slScheduleSave()" placeholder="บันทึกสิ่งที่เกิดขึ้น / สิ่งที่ทำ"></textarea>
+        <div class="recfl">ผู้เกี่ยวข้อง (ถ้ามี)</div><input id="slPeople" class="recfi" oninput="slScheduleSave()" placeholder="เช่น DM คุณ A">
+        <div class="recfl">📸 รูปภาพ (ถ้ามี) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="slThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" style="display:none;" onchange="slPick(this)"></label>
+        <div class="recfl" style="margin-top:10px;">สถานะ</div>
+        <div style="display:flex;gap:8px;margin:4px 0 8px;">
+          <button type="button" id="slStClosed" onclick="slSetStatus(false)" style="flex:1;padding:10px;border-radius:9px;border:none;background:#1B7A4B;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">✓ ปิดจบแล้ว</button>
+          <button type="button" id="slStFollow" onclick="slSetStatus(true)" style="flex:1;padding:10px;border-radius:9px;border:2px solid #C9942A;background:#fff;color:#8a5a00;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">⚑ ต้องติดตามต่อ</button>
+        </div>
+        <div id="slFollowNote" style="display:none;font-size:11px;color:#633806;background:#FAEEDA;border-radius:8px;padding:7px 10px;margin-bottom:8px;">ℹ️ จะเด้งเข้ามอบกะ + แดชบอร์ดผู้จัดการ จนกว่าจะปิด</div>
+        <div id="slSaveInd" style="text-align:center;font-size:12px;color:#27ae60;font-weight:700;margin:6px 0;">💾 บันทึกอัตโนมัติ</div>
+      </div>
+      <button id="slSubmitBtn" class="recbtn" onclick="slSubmit()">✓ บันทึกเหตุการณ์</button>
     </div>
   </div>
 
@@ -2652,8 +2682,8 @@ function menuHandover(){
 function menuSoon(n){alert(n+' — กำลังพัฒนา จะเปิดให้ใช้เร็ว ๆ นี้ครับ');}
 
 
-function _hideExtra(){['handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','crScreen','cpScreen','coScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});}
-function _hideAllMain(){['homeMenu','helpPanel','handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','ciScreen','crScreen','cpScreen','coScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});}
+function _hideExtra(){['handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','crScreen','cpScreen','coScreen','slScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});}
+function _hideAllMain(){['homeMenu','helpPanel','handoverHistScreen','swapScreen','eventsScreen','eventFormScreen','ciScreen','crScreen','cpScreen','coScreen','slScreen'].forEach(function(id){var e=document.getElementById(id);if(e)e.style.display='none';});var tb=document.querySelector('.tabs');if(tb)tb.style.display='none';document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});}
 /* ===== Control Room / Car Park / Contractor (records before patrol) ===== */
 var __crDone=false;
 var CR_fire=[], CR_elev=[], CR_cctv=[], CR_elevSt={E01:true,E02:true,E03:true,E04:true,E05:true};
@@ -2681,7 +2711,7 @@ async function _recPick(inp, arr, thumbId, max){
 }
 function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
   el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+_imgUrl(d)+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
-function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos,ovThumbs:OV_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
+function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos,ovThumbs:OV_photos,slThumbs:SL_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
 /* Control Room */
 function _applyLiftState(){ document.querySelectorAll('#crScreen .liftb').forEach(function(btn){ var k=((btn.querySelector('.lid')||{}).textContent)||''; var v=CR_elevSt[k]; var ok=!(v===false||v==='down'||v==='DOWN'||v==='เสีย'); btn.className='liftb '+(ok?'ok':'bad'); var st=btn.querySelector('.lst'); if(st)st.textContent=ok?'ปกติ':'เสีย'; }); }
 async function showControlRoom(){ _hideAllMain(); var s=document.getElementById('crScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
@@ -2851,6 +2881,67 @@ async function coSubmit(){
     else { showToast('บันทึกไม่สำเร็จ','error'); }
     btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้';
   }catch(e){ showToast('ผิดพลาด','error'); btn.disabled=false; btn.textContent='➕ เพิ่มผู้รับเหมารายนี้'; }
+}
+/* Security Log (OB) */
+var SL_CATS=[{k:'safe',t:'เปิด/ปิดเซฟ'},{k:'room',t:'ตรวจห้องแขก'},{k:'handover',t:'ของส่งมอบ/รับฝาก'},{k:'vip',t:'พา/ดูแล VIP'},{k:'anomaly',t:'พบสิ่งผิดปกติ'},{k:'lostfound',t:'ของหาย-เก็บได้'},{k:'key',t:'ยืม-คืนกุญแจ'},{k:'assist',t:'ช่วยเหลือแขก'},{k:'maint',t:'แจ้งซ่อม/อุปกรณ์'},{k:'emergency',t:'เหตุฉุกเฉิน'},{k:'other',t:'อื่นๆ'}];
+var SL_photos=[], SL_cat='room', SL_follow=false, SL_EDIT_ID='', SL_isMgr=false, SL_list=[];
+function slCatT(k){for(var i=0;i<SL_CATS.length;i++)if(SL_CATS[i].k===k)return SL_CATS[i].t;return k;}
+function _nowHM(){var d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function showSecLog(){ _hideAllMain(); var s=document.getElementById('slScreen'); if(s)s.style.display='block'; window.scrollTo(0,0); slResetForm(); slLoad(); }
+function slResetForm(){ SL_EDIT_ID=''; SL_cat='room'; SL_follow=false; SL_photos=[]; _renderThumbs(SL_photos,'slThumbs'); ['slTitle','slLoc','slDetail','slPeople'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';}); var t=document.getElementById('slTime'); if(t)t.value=_nowHM(); slRenderCats(); slSetStatus(false); var ft=document.getElementById('slFormTitle'); if(ft)ft.textContent='➕ บันทึกเหตุการณ์ใหม่'; var sb=document.getElementById('slSubmitBtn'); if(sb)sb.textContent='✓ บันทึกเหตุการณ์'; var si=document.getElementById('slSaveInd'); if(si){si.textContent='💾 บันทึกอัตโนมัติ';si.style.color='#27ae60';} }
+function slRenderCats(){var c=document.getElementById('slCats');if(!c)return;c.innerHTML=SL_CATS.map(function(x){var on=x.k===SL_cat;return '<button type="button" onclick="slPickCat(\''+x.k+'\')" style="padding:7px 11px;border-radius:18px;border:1.5px solid '+(on?'#1A3D6B':'#d6deea')+';background:'+(on?'#1A3D6B':'#fff')+';color:'+(on?'#fff':'#445')+';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">'+x.t+'</button>';}).join('');}
+function slPickCat(k){SL_cat=k;slRenderCats();slScheduleSave();}
+function slSetStatus(f){SL_follow=f;var c=document.getElementById('slStClosed'),fl=document.getElementById('slStFollow');if(c){c.style.background=f?'#fff':'#1B7A4B';c.style.color=f?'#1B7A4B':'#fff';c.style.border=f?'2px solid #1B7A4B':'none';}if(fl){fl.style.background=f?'#C9942A':'#fff';fl.style.color=f?'#fff':'#8a5a00';}var n=document.getElementById('slFollowNote');if(n)n.style.display=f?'block':'none';slScheduleSave();}
+function slPick(inp){ _recPick(inp, SL_photos, 'slThumbs', 10); slScheduleSave(); }
+function slPayload(){ var p={userId:_uid(),userName:_uname(),shift:_shiftId(),category:SL_cat,title:(document.getElementById('slTitle').value||'').trim(),location:document.getElementById('slLoc').value,detail:document.getElementById('slDetail').value,people:document.getElementById('slPeople').value,photos:SL_photos,status:SL_follow?'open':'closed',time:document.getElementById('slTime').value}; if(SL_EDIT_ID)p.logId=SL_EDIT_ID; return p; }
+var __slTimer=null,__slSaving=false;
+function slScheduleSave(){var ind=document.getElementById('slSaveInd');if(ind){ind.textContent='💾 กำลังบันทึก...';ind.style.color='#f39c12';}clearTimeout(__slTimer);__slTimer=setTimeout(slAutoSave,1200);}
+async function slAutoSave(){
+  var title=(document.getElementById('slTitle').value||'').trim();
+  var detail=(document.getElementById('slDetail').value||'').trim();
+  var ind=document.getElementById('slSaveInd');
+  if(!title && !detail){ if(ind){ind.textContent='💾 บันทึกอัตโนมัติ';ind.style.color='#27ae60';} return; }
+  if(__slSaving){ slScheduleSave(); return; }
+  __slSaving=true;
+  try{ var r=await api('saveSecurityLog',slPayload(),true); if(r&&r.success){ if(r.logId)SL_EDIT_ID=r.logId; if(ind){ind.textContent='✓ บันทึกแล้ว';ind.style.color='#27ae60';} } else if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ';ind.style.color='#e74c3c';} }
+  catch(e){ if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ (เน็ต)';ind.style.color='#e74c3c';} }
+  __slSaving=false;
+}
+async function slLoad(){
+  try{ var r=await api('getSecurityLogToday',{userId:_uid(),shift:_shiftId()},true); SL_list=(r&&r.entries)||[]; SL_isMgr=!!(r&&r.isManager);
+    var list=document.getElementById('slList'); if(!list)return;
+    list.innerHTML = SL_list.length ? SL_list.map(function(e){return slCardHtml(e);}).join('') : '<div class="coempty">ยังไม่มีบันทึกในวันนี้</div>';
+  }catch(e){}
+}
+function slCardHtml(e){
+  var open=e.status==='open';
+  var badge=open?'<span style="background:#FAEEDA;color:#8a5a00;font-size:11px;padding:2px 8px;border-radius:7px;font-weight:600;">⚑ ติดตามต่อ</span>':'<span style="background:#E3F4EA;color:#1B7A4B;font-size:11px;padding:2px 8px;border-radius:7px;font-weight:600;">✓ ปิดแล้ว</span>';
+  var shTag=(e.shift==='morning'?'เช้า':e.shift==='afternoon'?'บ่าย':e.shift==='night'?'ดึก':(e.shift||''));
+  var meta='<span style="font-size:11px;color:#556;background:#eef2f7;padding:1px 7px;border-radius:6px;">กะ'+shTag+' · '+_esc(e.userName||'')+(e.carried?' · ยกมา '+_esc(e.date):'')+'</span>';
+  var acts='';
+  if(open && (e.mine||SL_isMgr)){ acts+='<button onclick="slClose(\''+e.logId+'\')" style="border:1.5px solid #1B7A4B;background:#fff;color:#1B7A4B;border-radius:7px;font-size:12px;font-weight:600;padding:4px 9px;cursor:pointer;font-family:inherit;">ปิดจ๊อบ</button>'; }
+  if(e.mine){ acts+='<span onclick="slEdit(\''+e.logId+'\')" style="cursor:pointer;color:#1565C0;font-size:17px;padding:3px 5px;">✎</span><span onclick="slDel(\''+e.logId+'\')" style="cursor:pointer;color:#c0392b;font-size:17px;padding:3px 5px;">🗑</span>'; }
+  return '<div class="cocard" style="border-left:3px solid '+(open?'#C9942A':'#1B7A4B')+';">'
+    +'<div style="margin-bottom:3px;">'+meta+'</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;"><span style="font-size:11px;color:#fff;background:#1A3D6B;padding:1px 7px;border-radius:6px;">'+_esc(slCatT(e.category))+'</span><span style="font-size:12px;color:#889;">'+_esc(e.time||'')+(e.location?' · '+_esc(e.location):'')+'</span>'+badge+'</div>'
+    +'<b style="font-size:14px;">'+_esc(e.title||'(ไม่มีหัวข้อ)')+'</b>'
+    +(e.detail?'<div class="com">'+_esc(e.detail)+(e.photos&&e.photos.length?' · 📷 '+e.photos.length:'')+'</div>':'')
+    +(acts?'<div style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:6px;">'+acts+'</div>':'')
+    +'</div>';
+}
+function slEdit(id){ var e=null;for(var i=0;i<SL_list.length;i++)if(String(SL_list[i].logId)===String(id))e=SL_list[i]; if(!e)return; if(!e.mine){showToast('แก้ได้เฉพาะของกะตัวเอง','error');return;}
+  SL_EDIT_ID=e.logId; SL_cat=e.category||'other'; slRenderCats(); document.getElementById('slTitle').value=e.title||''; document.getElementById('slTime').value=e.time||''; document.getElementById('slLoc').value=e.location||''; document.getElementById('slDetail').value=e.detail||''; document.getElementById('slPeople').value=e.people||''; SL_photos=(e.photos||[]).slice(); _renderThumbs(SL_photos,'slThumbs'); slSetStatus(e.status==='open');
+  document.getElementById('slFormTitle').textContent='✏️ แก้ไขเหตุการณ์'; document.getElementById('slSubmitBtn').textContent='💾 บันทึกการแก้ไข'; try{document.getElementById('slFormTitle').scrollIntoView({behavior:'smooth',block:'center'});}catch(x){}
+}
+async function slClose(id){ if(!confirm('ยืนยันปิดจ๊อบนี้?'))return; try{ var r=await api('closeSecurityLog',{logId:id,userId:_uid(),userName:_uname()},true); if(r&&r.success){ showToast('✓ ปิดจ๊อบแล้ว','success'); slLoad(); } else showToast('❌ '+((r&&r.error)||'ปิดไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function slDel(id){ if(!confirm('ลบบันทึกนี้?'))return; try{ var r=await api('deleteSecurityLog',{logId:id,userId:_uid()},true); if(r&&r.success){ showToast('ลบแล้ว','success'); if(String(SL_EDIT_ID)===String(id))slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'ลบไม่สำเร็จ'),'error'); }catch(e){ showToast('ผิดพลาด','error'); } }
+async function slSubmit(){
+  var title=(document.getElementById('slTitle').value||'').trim(); if(!title){ showToast('ใส่หัวข้อก่อน','error'); return; }
+  clearTimeout(__slTimer);
+  var btn=document.getElementById('slSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
+  try{ var r=await api('saveSecurityLog',slPayload(),true); if(r&&r.success){ showToast(SL_EDIT_ID?'✅ แก้ไขแล้ว':'✅ บันทึกแล้ว','success'); slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'บันทึกไม่สำเร็จ'),'error'); }
+  catch(e){ showToast('ผิดพลาด','error'); }
+  btn.disabled=false; btn.textContent='✓ บันทึกเหตุการณ์';
 }
 function _bkkParts(){
   try{
