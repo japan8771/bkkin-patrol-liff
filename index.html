@@ -2706,9 +2706,20 @@ async function advanceFlow(){
 }
 async function _recPick(inp, arr, thumbId, max){
   var files=Array.prototype.slice.call(inp.files||[]);
-  for(var i=0;i<files.length && arr.length<max;i++){ try{ var d=await resizeImage(files[i],1280,0.7, inp.hasAttribute('capture')); arr.push(d); }catch(e){} }
+  var fail=0;
+  for(var i=0;i<files.length && arr.length<max;i++){
+    var d=null;
+    try{ d=await resizeImage(files[i],1280,0.7, inp.hasAttribute('capture')); }
+    catch(e){
+      try{ d=await resizeImage(files[i],1000,0.6, inp.hasAttribute('capture')); }
+      catch(e2){ try{ d=await _fileToDataURL(files[i]); }catch(e3){ d=null; } }
+    }
+    if(d) arr.push(d); else fail++;
+  }
   inp.value=''; _renderThumbs(arr, thumbId);
+  if(fail>0){ try{ showToast('⚠️ มี '+fail+' รูปเพิ่มไม่สำเร็จ ลองถ่าย/เลือกใหม่อีกครั้ง','error'); }catch(_t){} }
 }
+function _fileToDataURL(file){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(e){res(e.target.result);}; r.onerror=rej; r.readAsDataURL(file); }); }
 function _renderThumbs(arr, id){ var el=document.getElementById(id); if(!el)return;
   el.innerHTML=arr.map(function(d,i){ return '<div class="thmb"><img src="'+_imgUrl(d)+'"><button onclick="_rmThumb(\''+id+'\','+i+')">×</button></div>'; }).join(''); }
 function _rmThumb(id,i){ var map={crFireThumbs:CR_fire,crElevThumbs:CR_elev,crCctvThumbs:CR_cctv,cpThumbs:CP_photos,coThumbs:CO_photos,ovThumbs:OV_photos,slThumbs:SL_photos}; var arr=map[id]; if(arr){arr.splice(i,1);_renderThumbs(arr,id);} }
