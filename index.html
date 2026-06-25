@@ -596,7 +596,7 @@
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🚗 รถยนต์รอบอาคาร</div><div style="font-size:11px;color:#888;">Cars around building</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpAround',-1)">−</button><div class="sval2" id="cpAround">0</div><button class="sbtn2 p" onclick="cpStep('cpAround',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🛗 รถในลิฟต์จอดรถ</div><div style="font-size:11px;color:#888;">Cars in parking lift</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpLift',-1)">−</button><div class="sval2" id="cpLift">0</div><button class="sbtn2 p" onclick="cpStep('cpLift',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🏍️ มอเตอร์ไซค์</div><div style="font-size:11px;color:#888;">Motorcycles</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpMoto',-1)">−</button><div class="sval2" id="cpMoto">0</div><button class="sbtn2 p" onclick="cpStep('cpMoto',1)">+</button></div></div>
-      <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" style="display:none;" onchange="cpPick(this)"></label></div>
+      <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" capture="environment" style="display:none;" onchange="cpPick(this)"></label></div>
       <div id="ovWrap" style="display:none;">
         <div class="reccard">
           <div class="recttl">🌙 รถจอดค้างคืน (เฉพาะกะดึก)</div>
@@ -1828,28 +1828,12 @@ function _stampTime(ctx, w, h) {
     ctx.fillText(label, bx + pad, by + pad);
   } catch (e) {}
 }
-function resizeImage(file, maxSize, quality, stamp) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let w = img.width, h = img.height;
-        if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
-        else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        if (stamp) _stampTime(ctx, w, h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = reject;
-      img.src = e.target.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+function resizeImage(file, maxSize, quality, stamp){
+  function _draw(src, iw, ih){ var w=iw, h=ih; if(w>h){ if(w>maxSize){ h=h*maxSize/w; w=maxSize; } } else { if(h>maxSize){ w=w*maxSize/h; h=maxSize; } } var c=document.createElement('canvas'); c.width=w; c.height=h; var ctx=c.getContext('2d'); ctx.drawImage(src,0,0,w,h); if(stamp){ try{ _stampTime(ctx,w,h); }catch(_s){} } return c.toDataURL('image/jpeg', quality); }
+  return (async function(){
+    if(typeof createImageBitmap==='function'){ try{ var bmp=await createImageBitmap(file); var d=_draw(bmp, bmp.width, bmp.height); try{ bmp.close && bmp.close(); }catch(_c){} return d; }catch(_b){} }
+    return await new Promise(function(resolve,reject){ var reader=new FileReader(); reader.onload=function(e){ var img=new Image(); img.onload=function(){ try{ resolve(_draw(img, img.width, img.height)); }catch(er){ reject(er); } }; img.onerror=reject; img.src=e.target.result; }; reader.onerror=reject; reader.readAsDataURL(file); });
+  })();
 }
 
 // GPS capture — best effort (ถ้า user ไม่ allow ก็ไม่ส่ง)
