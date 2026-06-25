@@ -2775,7 +2775,7 @@ async function crSubmit(){
 /* Car Park */
 async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpScreen'); if(s)s.style.display='block'; window.scrollTo(0,0);
   try{ var r=await api('getCarParkToday',{shift:_shiftId(),userId:_uid()}); var recs=(r&&r.records)||[];
-    if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
+    if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; CP_photos=(last.photos||[]).slice(); _renderThumbs(CP_photos,'cpThumbs'); var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
   }catch(e){}
   var ow=document.getElementById('ovWrap'); var isNight=(_shiftId()==='night'); if(ow)ow.style.display=isNight?'block':'none'; if(isNight){ OV_EDIT_ROW=0; OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); document.getElementById('ovSubmitBtn').textContent='➕ เพิ่มรถคันนี้'; ovTypeChange(); ovLoad(); }
 }
