@@ -987,7 +987,7 @@ let userProfile = null;
 let guardInfo = null;
 let appConfig = null;
 let currentShift = null;
-const SHIFT_DEFS = {
+const SHIFT_DEFS = { midday: { id:'midday', label:'กะกลางวัน', icon:'🌤️', start:11, end:20 }, evening: { id:'evening', label:'กะค่ำ', icon:'🌆', start:14, end:23 }, midday: { id:'midday', label:'กะกลางวัน', icon:'🌤️', start:11, end:20 }, evening: { id:'evening', label:'กะค่ำ', icon:'🌆', start:14, end:23 },
   morning:   { id:'morning',   label:'กะเช้า',  icon:'🌅', start:7,  end:16 },
   afternoon: { id:'afternoon', label:'กะบ่าย', icon:'☀️', start:13, end:22 },
   night:     { id:'night',     label:'กะดึก',  icon:'🌙', start:22, end:7  },
@@ -2053,8 +2053,8 @@ function showClockInButton() {
   const autoId = (currentShift && currentShift.id) || 'morning';
   if (!window.__selectedShiftId) window.__selectedShiftId = autoId;
   const shifts = [
-    { id: 'morning',   icon: '🌅', label: 'กะเช้า',  time: '07:00-16:00' },
-    { id: 'afternoon', icon: '☀️', label: 'กะบ่าย',  time: '13:00-22:00' },
+    { id: 'morning',   icon: '🌅', label: 'กะเช้า',  time: '07:00-16:00' }, { id: 'midday', icon: '🌤️', label: 'กะกลางวัน', time: '11:00-20:00' }, { id: 'midday', icon: '🌤️', label: 'กะกลางวัน', time: '11:00-20:00' },
+    { id: 'afternoon', icon: '☀️', label: 'กะบ่าย',  time: '13:00-22:00' }, { id: 'evening', icon: '🌆', label: 'กะค่ำ', time: '14:00-23:00' }, { id: 'evening', icon: '🌆', label: 'กะค่ำ', time: '14:00-23:00' },
     { id: 'night',     icon: '🌙', label: 'กะดึก',  time: '22:00-07:00' },
   ];
   const sel = window.__selectedShiftId;
@@ -2108,7 +2108,7 @@ async function renderClockInScreen(){
   } else {
     var nowShift=_guessShiftByTime();
     if(!window.__ciSel) window.__ciSel=(att&&att.shift)||nowShift;
-    var ids=['morning','afternoon','night'];
+    var ids=['morning','midday','afternoon','evening','night'];
     var btns=ids.map(function(id){ var sd=(SHIFT_DEFS&&SHIFT_DEFS[id])||{}; var sel=(window.__ciSel===id); var now=(nowShift===id);
       return '<div onclick="ciPick(\''+id+'\')" style="flex:1;border:2px solid '+(sel?'#1abc9c':'#e3e6ee')+';border-radius:13px;padding:14px 6px;text-align:center;background:'+(sel?'#eafaf5':'#fafbfc')+';position:relative;cursor:pointer;">'
         +(now?'<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#1abc9c;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:9px;white-space:nowrap;">• ปัจจุบัน</div>':'')
@@ -2949,7 +2949,7 @@ function _bkkParts(){
 function _todayStr(){var p=_bkkParts();return p.y+'-'+String(p.mo).padStart(2,'0')+'-'+String(p.d).padStart(2,'0');}
 function _thMonth(m){return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m];}
 function _fmtTh(ds){var p=String(ds).split('-');if(p.length!==3)return ds;return parseInt(p[2],10)+' '+_thMonth(parseInt(p[1],10)-1)+' '+p[0];}
-function _shLabel(id){return {morning:'🌅 กะเช้า',afternoon:'☀️ กะบ่าย',night:'🌙 กะดึก'}[id]||id;}
+function _shLabel(id){return {midday:'🌤️ กะกลางวัน',evening:'🌆 กะค่ำ',midday:'🌤️ กะกลางวัน',evening:'🌆 กะค่ำ',morning:'🌅 กะเช้า',afternoon:'☀️ กะบ่าย',night:'🌙 กะดึก'}[id]||id;}
 var hhDate, hhShift='all', hhData=[];
 function showHandoverHist(){_hideAllMain();var s=document.getElementById('handoverHistScreen');if(s)s.style.display='block';window.scrollTo(0,0);hhDate=_todayStr();hhShift='all';hhRenderTabs();loadHandoverHist();}
 function hhRenderTabs(){document.querySelectorAll('#hhTabs .hhtab').forEach(function(t){t.classList.toggle('on',t.getAttribute('data-s')===hhShift);});}
