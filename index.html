@@ -1483,7 +1483,7 @@ async function regenerateReport(date, shiftId, btn) {
       btn.disabled = false;
     }
   } catch (e) {
-    showToast('❌ Network error', 'error');
+    showToast('⏳ กำลังสร้างรายงานอยู่ (ใช้เวลา 1-2 นาที) เสร็จแล้วลิงก์จะส่งเข้า LINE อัตโนมัติ ไม่ต้องกดซ้ำ', 'success');
     btn.textContent = orig;
     btn.disabled = false;
   }
