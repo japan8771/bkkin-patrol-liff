@@ -2938,7 +2938,7 @@ async function slSubmit(){
   var title=(document.getElementById('slTitle').value||'').trim(); if(!title){ showToast('ใส่หัวข้อก่อน','error'); return; }
   clearTimeout(__slTimer);
   var btn=document.getElementById('slSubmitBtn'); btn.disabled=true; btn.textContent='กำลังบันทึก...';
-  try{ var r=await api('saveSecurityLog',slPayload(),true); if(r&&r.success){ showToast(SL_EDIT_ID?'✅ แก้ไขแล้ว':'✅ บันทึกแล้ว','success'); slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'บันทึกไม่สำเร็จ'),'error'); }
+  try{ var r=await api('saveSecurityLog',Object.assign({},slPayload(),{finalize:true}),true); if(r&&r.success){ showToast(SL_EDIT_ID?'✅ แก้ไขแล้ว':'✅ บันทึกแล้ว','success'); slResetForm(); slLoad(); } else showToast('❌ '+((r&&r.error)||'บันทึกไม่สำเร็จ'),'error'); }
   catch(e){ showToast('ผิดพลาด','error'); }
   btn.disabled=false; btn.textContent='✓ บันทึกเหตุการณ์';
 }
