@@ -1455,13 +1455,13 @@ async function renderHistory() {
   });
 }
 
-async function regenerateReport(date, shiftId, btn) {
+async function regenerateReport(date, shiftId, btn) { if(__reportBusy('regen')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
   if (!(await _confirm('สร้างรายงาน PDF ใหม่สำหรับ ' + date + ' (' + shiftId + ')?\nหลังสร้างเสร็จ ระบบจะเปิด PDF ให้ดูทันที'))) return;
   const orig = btn.textContent;
   btn.textContent = '⏳ กำลังสร้าง...';
   btn.disabled = true;
   try {
-    const r = await api('regenerateReport', { userId: userProfile.userId, date: date, shiftId: shiftId }, true);
+__reportMark('regen');     const r = await api('regenerateReport', { userId: userProfile.userId, date: date, shiftId: shiftId }, true);
     if (r.success) {
       showToast('✓ สร้างรายงานสำเร็จ — กำลังเปิด PDF...', 'success');
       // เปิด PDF เด้งทันทีหลัง generate เสร็จ
@@ -1505,7 +1505,7 @@ async function renderDailyReportPane(){
   var pane=document.getElementById('dailyReportPane');
   if(!pane) return;
   pane.innerHTML='<div style="font-size:12px;color:#666;padding:14px;text-align:center;">⏳ กำลังโหลดรายการ...</div>';
-  try{ var resp=await api('genDailyReport',{ list:true }, true); _dailyReportUrls=(resp&&resp.reports)||{}; }catch(e){ _dailyReportUrls={}; }
+__reportMark('daily');   try{ var resp=await api('genDailyReport',{ list:true }, true); _dailyReportUrls=(resp&&resp.reports)||{}; }catch(e){ _dailyReportUrls={}; }
   var today=new Date();
   var html='<div style="font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;">กด <b>📖 เปิดดู</b> เพื่อโหลดรายงานประจำวันมาดู (ทุกคนเปิดดูได้) · วันที่ยังไม่มีให้กด <b>📑 สร้าง &amp; ส่ง</b></div>';
   for(var i=1;i<=14;i++){
@@ -1527,7 +1527,10 @@ async function renderDailyReportPane(){
   }
   pane.innerHTML=html;
 }
-async function genDailyManual(date, btn){
+var __rgLock={};
+function __reportBusy(key){return (Date.now()-(__rgLock[key]||0))<240000;}
+function __reportMark(key){__rgLock[key]=Date.now();}
+async function genDailyManual(date, btn){ if(__reportBusy('daily')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
   if(!(await _confirm('สร้าง & ส่งรายงานประจำวันของ '+date+' เข้าไลน์?\n(ผู้จัดการ + รปภ.ทุกคนจะได้รับ)'))) return;
   var orig=btn.textContent;
   btn.textContent='⏳ กำลังสร้าง...'; btn.disabled=true;
@@ -2391,11 +2394,11 @@ async function confirmEndPatrol() {
   } finally { window.__endingBusy = false; }
 }
 
-async function doEndPatrol() {
+async function doEndPatrol() { if(__reportBusy('endshift')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
   document.getElementById('endPatrolBtn').textContent = '⏳ กำลังสร้างรายงาน PDF...';
   document.getElementById('endPatrolBtn').disabled = true;
   try {
-    const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName, shift: _shiftId() }, true);
+__reportMark('endshift');     const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName, shift: _shiftId() }, true);
     if (r.success) {
       window.__shiftEnded = true;
       document.getElementById('endPatrolBtn').style.display = 'none';
