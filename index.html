@@ -596,7 +596,7 @@
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🚗 รถยนต์รอบอาคาร</div><div style="font-size:11px;color:#888;">Cars around building</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpAround',-1)">−</button><div class="sval2" id="cpAround">0</div><button class="sbtn2 p" onclick="cpStep('cpAround',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🛗 รถในลิฟต์จอดรถ</div><div style="font-size:11px;color:#888;">Cars in parking lift</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpLift',-1)">−</button><div class="sval2" id="cpLift">0</div><button class="sbtn2 p" onclick="cpStep('cpLift',1)">+</button></div></div>
       <div class="costep"><div><div style="font-weight:700;font-size:14px;">🏍️ มอเตอร์ไซค์</div><div style="font-size:11px;color:#888;">Motorcycles</div></div><div style="display:flex;align-items:center;gap:12px;"><button class="sbtn2" onclick="cpStep('cpMoto',-1)">−</button><div class="sval2" id="cpMoto">0</div><button class="sbtn2 p" onclick="cpStep('cpMoto',1)">+</button></div></div>
-      <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" style="display:none;" onchange="cpPick(this)"></label></div>
+      <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input multiple type="file" accept="image/*" style="display:none;" onchange="cpPick(this)"></label></div>
       <div id="ovWrap" style="display:none;">
         <div class="reccard">
           <div class="recttl">🌙 รถจอดค้างคืน (เฉพาะกะดึก)</div>
@@ -634,7 +634,7 @@
         <div class="recfl">พื้นที่ / ชั้น</div><input id="coArea" class="recfi" placeholder="เช่น 4F ห้องเครื่องสระ">
         <div class="recfl">รายละเอียดงาน</div><textarea id="coDetail" class="recfi" style="min-height:60px;"></textarea>
         <div class="recfl">มอบหมายผู้รับทราบ</div><input id="coAck" class="recfi" placeholder="ชื่อผู้รับทราบ">
-        <div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="coThumbs"></div><label class="addph" style="margin-top:8px;">＋<input type="file" accept="image/*" style="display:none;" onchange="coPick(this)"></label>
+        <div class="recfl">📸 แนบรูป (ไม่บังคับ)</div><div class="thmbs" id="coThumbs"></div><label class="addph" style="margin-top:8px;">＋<input multiple type="file" accept="image/*" style="display:none;" onchange="coPick(this)"></label>
       </div>
       <button id="coSubmitBtn" class="recbtn" onclick="coSubmit()">➕ เพิ่มผู้รับเหมารายนี้</button>
     </div>
@@ -2746,10 +2746,10 @@ async function crAutoSave(){
     cctvDvr:(document.getElementById('crDvr')||{}).checked?'ปกติ':'ผิดปกติ', cctvCam:(document.getElementById('crCam')||{}).checked?'ปกติ':'ผิดปกติ', cctvPhotos:CR_cctv,
     cctvNote:(document.getElementById('crCctvNote')||{}).value||'' };
   try{
-    var r=await api('saveControlRoom',p,true);
+    var _crL0=CR_fire.length,_crE0=CR_elev.length,_crC0=CR_cctv.length; var r=await api('saveControlRoom',p,true);
     if(r&&r.success){
       if(ind){ind.textContent='✓ บันทึกแล้ว';ind.style.color='#27ae60';}
-      try{ var g=await api('getControlRoomToday',{userId:_uid(),shift:_shiftId()}); if(g&&g.exists){ CR_fire=(g.firePhotos||[]).slice(); CR_elev=(g.elevPhotos||[]).slice(); CR_cctv=(g.cctvPhotos||[]).slice(); _renderThumbs(CR_fire,'crFireThumbs'); _renderThumbs(CR_elev,'crElevThumbs'); _renderThumbs(CR_cctv,'crCctvThumbs'); } }catch(e){}
+      try{ var g=await api('getControlRoomToday',{userId:_uid(),shift:_shiftId()}); if(g&&g.exists){ CR_fire = (CR_fire.length===_crL0)?((g.firePhotos||[]).slice()):CR_fire; CR_elev = (CR_elev.length===_crE0)?((g.elevPhotos||[]).slice()):CR_elev; CR_cctv = (CR_cctv.length===_crC0)?((g.cctvPhotos||[]).slice()):CR_cctv; _renderThumbs(CR_fire,'crFireThumbs'); _renderThumbs(CR_elev,'crElevThumbs'); _renderThumbs(CR_cctv,'crCctvThumbs'); } }catch(e){}
     } else if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ — ลองแก้อีกครั้ง';ind.style.color='#e74c3c';}
   }catch(e){ if(ind){ind.textContent='⚠️ บันทึกไม่สำเร็จ (เน็ต) — จะลองใหม่';ind.style.color='#e74c3c';} }
   __crSaving=false;
