@@ -2393,7 +2393,7 @@ async function confirmEndPatrol() {
   } finally { window.__endingBusy = false; }
 }
 
-async /* ===== Handover Wizard (Phase B) ===== */
+/* ===== Handover Wizard (Phase B) ===== */
 var HO_STEPS=[
 {key:'patrol',t:'🥾 งานเดินตรวจ',d:'ยืนยันจุดตรวจ / จุดที่ยังค้าง',none:'ไม่มีจุดค้าง',ph:'เช่น จุดที่ยังเข้าไม่ได้ / ต้องตามต่อ'},
 {key:'incidents',t:'⚠️ เหตุการณ์',d:'เหตุการณ์ที่ยังไม่ปิด ให้กะถัดไปติดตาม',none:'ไม่มีเหตุการณ์',ph:'เช่น เคสที่ยังรอผล / รอผู้เกี่ยวข้อง'},
@@ -2463,7 +2463,7 @@ async function hoFinish(){
 }
 /* ===== end Handover Wizard ===== */
 
-function doEndPatrol() { if(__reportBusy('endshift')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
+async function doEndPatrol() { if(__reportBusy('endshift')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
   document.getElementById('endPatrolBtn').textContent = '⏳ กำลังสร้างรายงาน PDF...';
   document.getElementById('endPatrolBtn').disabled = true;
   try {
