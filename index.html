@@ -2389,17 +2389,87 @@ async function confirmEndPatrol() {
   if (!(_cor && _cor.contractors && _cor.contractors.length)) { showToast('👷 บันทึก Contractor หรือกดยืนยันไม่มีผู้รับเหมา ก่อนจบกะ', 'error'); showContractor(); return; }
   if (!(await _confirm('ยืนยันจบกะและส่งรายงานให้ Manager?\n\nรายงานจะถูกสร้างเป็น PDF พร้อมรูปทุกจุด'))) return;
   // ถามฝากกะก่อน (โหมดจบกะ)
-  handoverMode = 'endshift';
-  openHandoverModal();
+  openHoWizard();
   } finally { window.__endingBusy = false; }
 }
 
-async function doEndPatrol() { if(__reportBusy('endshift')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
+async /* ===== Handover Wizard (Phase B) ===== */
+var HO_STEPS=[
+{key:'patrol',t:'🥾 งานเดินตรวจ',d:'ยืนยันจุดตรวจ / จุดที่ยังค้าง',none:'ไม่มีจุดค้าง',ph:'เช่น จุดที่ยังเข้าไม่ได้ / ต้องตามต่อ'},
+{key:'incidents',t:'⚠️ เหตุการณ์',d:'เหตุการณ์ที่ยังไม่ปิด ให้กะถัดไปติดตาม',none:'ไม่มีเหตุการณ์',ph:'เช่น เคสที่ยังรอผล / รอผู้เกี่ยวข้อง'},
+{key:'cars',t:'🚗 จองรถ / อีเวนต์',d:'งานจองรถหรืออีเวนต์ที่ต้องส่งต่อ',none:'ไม่มี',ph:'เช่น รถรับ-ส่งเวลา... / งานห้อง...'},
+{key:'contractors',t:'🔧 ผู้รับเหมาในพื้นที่',d:'ผู้รับเหมาที่ยังทำงานหรือมีนัดหมาย',none:'ไม่มีค้าง',ph:'เช่น ทีมช่างชั้น... ยังทำถึง...'},
+{key:'overnight',t:'🅿️ รถค้างคืน',d:'สรุปรถค้างคืนให้กะถัดไป',none:'ตรวจครบ',ph:'เช่น ทะเบียน... จอดชั้น...',nightOnly:true},
+{key:'pending',t:'➡️ สิ่งที่ต้องทำต่อ',d:'งานที่ต้องส่งต่อให้กะถัดไปทำ',none:'ไม่มีงานค้าง',ph:'เช่น ต้องตามเอกสาร... / รอผู้จัดการ...'},
+{key:'others',t:'📝 อื่นๆ / หมายเหตุ',d:'ไม่บังคับ',none:'ข้าม',ph:'หมายเหตุเพิ่มเติม',optional:true}
+];
+var HO_d={},HO_i=0,HO_A=[];
+function hoIsNight(){return (typeof currentShift!=='undefined'&&currentShift&&currentShift.id==='night')||(typeof _shiftId!=='undefined'&&_shiftId==='night');}
+function openHoWizard(){HO_d={};HO_i=0;HO_A=HO_STEPS.filter(function(s){return !(s.nightOnly&&!hoIsNight());});hoBuildDom();document.getElementById('hoWizOverlay').style.display='flex';hoRender();}
+function hoMk(tag,css,txt){var e=document.createElement(tag);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e;}
+function hoBuildDom(){
+ if(document.getElementById('hoWizOverlay'))return;
+ var ov=hoMk('div','display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:flex-end;justify-content:center;');ov.id='hoWizOverlay';
+ var card=hoMk('div','background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;');
+ var hd=hoMk('div','background:#1A3D6B;color:#fff;padding:16px 18px;');
+ var h1=hoMk('div','font-size:17px;font-weight:700;','🔁 ส่งมอบกะ (Handover)');
+ var prog=hoMk('div','font-size:12px;opacity:.85;margin-top:3px;');prog.id='hoWizProg';
+ var bar=hoMk('div','height:4px;background:rgba(255,255,255,.25);border-radius:3px;margin-top:8px;');
+ var barin=hoMk('div','height:100%;width:0;background:#fff;border-radius:3px;transition:width .2s;');barin.id='hoWizBarIn';
+ bar.appendChild(barin);hd.appendChild(h1);hd.appendChild(prog);hd.appendChild(bar);
+ var bd=hoMk('div','padding:18px;');
+ var st=hoMk('div','font-size:17px;font-weight:700;margin-bottom:3px;color:#1A3D6B;');st.id='hoWizST';
+ var sd=hoMk('div','font-size:13px;color:#777;margin-bottom:12px;');sd.id='hoWizSD';
+ var sum=hoMk('div','background:#EEF3FA;color:#1A3D6B;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:12px;display:none;');sum.id='hoWizSum';
+ var ta=hoMk('textarea','width:100%;min-height:82px;border:1.5px solid #d5d5d5;border-radius:12px;padding:12px;font-size:15px;box-sizing:border-box;font-family:inherit;');ta.id='hoWizIn';
+ var act=hoMk('div','display:flex;gap:10px;margin-top:16px;');
+ var bNone=hoMk('button','flex:1;padding:14px;border-radius:12px;border:1.5px solid #c9c9c9;background:#f6f6f6;font-size:15px;font-weight:600;color:#555;');bNone.id='hoWizNoneBtn';bNone.addEventListener('click',hoNone);
+ var bNext=hoMk('button','flex:1.4;padding:14px;border-radius:12px;border:none;background:#1A3D6B;color:#fff;font-size:15px;font-weight:700;');bNext.id='hoWizNextBtn';bNext.addEventListener('click',hoNext);
+ act.appendChild(bNone);act.appendChild(bNext);
+ var nav=hoMk('div','display:flex;justify-content:space-between;align-items:center;margin-top:14px;');
+ var bBack=hoMk('button','padding:8px 14px;border-radius:10px;border:1px solid #e0e0e0;background:#fff;font-size:14px;color:#555;','← ย้อนกลับ');bBack.id='hoWizBackBtn';bBack.addEventListener('click',hoBack);
+ var bCancel=hoMk('button','padding:8px 14px;border:none;background:transparent;color:#aaa;font-size:13px;','ยกเลิก');bCancel.addEventListener('click',hoCancel);
+ nav.appendChild(bBack);nav.appendChild(bCancel);
+ bd.appendChild(st);bd.appendChild(sd);bd.appendChild(sum);bd.appendChild(ta);bd.appendChild(act);bd.appendChild(nav);
+ card.appendChild(hd);card.appendChild(bd);ov.appendChild(card);document.body.appendChild(ov);
+}
+function hoRender(){
+ var s=HO_A[HO_i];
+ document.getElementById('hoWizProg').textContent='ขั้นที่ '+(HO_i+1)+' จาก '+HO_A.length;
+ document.getElementById('hoWizBarIn').style.width=Math.round((HO_i+1)/HO_A.length*100)+'%';
+ document.getElementById('hoWizST').textContent=s.t;
+ document.getElementById('hoWizSD').textContent=s.d;
+ var inp=document.getElementById('hoWizIn');inp.value=HO_d[s.key]||'';inp.placeholder=s.ph||'';
+ var sum=document.getElementById('hoWizSum');
+ if(s.key==='patrol'){var tot=(typeof currentCheckpoints!=='undefined'&&currentCheckpoints?currentCheckpoints.length:0);var done=(typeof checkedIn!=='undefined'&&checkedIn?Object.keys(checkedIn).length:0);sum.style.display='block';sum.textContent='✅ จุดตรวจ '+done+'/'+tot+' จุด';}else{sum.style.display='none';}
+ document.getElementById('hoWizNoneBtn').textContent=s.none||'ไม่มี';
+ document.getElementById('hoWizNextBtn').textContent=(HO_i===HO_A.length-1)?'✅ ยืนยันจบกะ':'ถัดไป →';
+ document.getElementById('hoWizBackBtn').style.visibility=(HO_i===0)?'hidden':'visible';
+}
+function hoNone(){HO_d[HO_A[HO_i].key]='';hoAdvance();}
+function hoNext(){HO_d[HO_A[HO_i].key]=(document.getElementById('hoWizIn').value||'').trim();hoAdvance();}
+function hoAdvance(){if(HO_i<HO_A.length-1){HO_i++;hoRender();}else{hoFinish();}}
+function hoBack(){if(HO_i>0){HO_d[HO_A[HO_i].key]=(document.getElementById('hoWizIn').value||'').trim();HO_i--;hoRender();}}
+function hoCancel(){document.getElementById('hoWizOverlay').style.display='none';window.__endingBusy=false;}
+async function hoFinish(){
+ var ov=document.getElementById('hoWizOverlay');var btn=document.getElementById('hoWizNextBtn');btn.disabled=true;btn.textContent='กำลังส่ง...';
+ var tot=(typeof currentCheckpoints!=='undefined'&&currentCheckpoints?currentCheckpoints.length:0);
+ var done=(typeof checkedIn!=='undefined'&&checkedIn?Object.keys(checkedIn).length:0);
+ var pnote=HO_d.patrol||'';
+ HO_d.patrol=done+'/'+tot+' จุด'+(pnote?(' · '+pnote):(tot>0&&done>=tot?' ครบ':''));
+ ov.style.display='none';
+ try{await doEndPatrol();}catch(e){}
+ try{await api('submitHandoverV2',{userId:(typeof userProfile!=='undefined'&&userProfile?userProfile.userId:''),fromShift:(typeof _shiftId!=='undefined'?_shiftId:''),sections:HO_d,reportUrl:(window.__lastReportUrl||'')},true);}catch(e){}
+}
+/* ===== end Handover Wizard ===== */
+
+function doEndPatrol() { if(__reportBusy('endshift')){try{showToast('⏳ กำลังสร้างรายงานอยู่ รอสักครู่ ไม่ต้องกดซ้ำ เสร็จแล้วลิงก์จะส่งเข้า LINE','error');}catch(e){} return;} 
   document.getElementById('endPatrolBtn').textContent = '⏳ กำลังสร้างรายงาน PDF...';
   document.getElementById('endPatrolBtn').disabled = true;
   try {
 __reportMark('endshift');     const r = await api('endPatrol', { userId: userProfile.userId, userName: userProfile.displayName, shift: _shiftId() }, true);
     if (r.success) {
+        window.__lastReportUrl=(r.reportUrl||'');
       window.__shiftEnded = true;
       document.getElementById('endPatrolBtn').style.display = 'none';
       document.getElementById('reportedCard').style.display = 'block';
