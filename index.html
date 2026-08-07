@@ -1071,7 +1071,21 @@ function showMain() {
   try{ _routeDeepLink(); }catch(e){}
 }
 
-async function api(action, params, isPost) {
+async function api(action, params, isPost){
+  // retry เฉพาะคำสั่งอ่าน (GET). คำสั่งเขียน (isPost=true) รันครั้งเดียวเสมอ กันการทำซ้ำ
+  var attempts = isPost ? 1 : 3;
+  var lastErr;
+  for (var _i=0; _i<attempts; _i++){
+    try { return await _apiOnce(action, params, isPost); }
+    catch (e) {
+      lastErr = e;
+      if (isPost) throw e;
+      if (_i < attempts-1) { await new Promise(function(r){ setTimeout(r, 400*(_i+1)); }); }
+    }
+  }
+  throw lastErr;
+}
+async function _apiOnce(action, params, isPost) {
   const url = GAS_ENDPOINT + (isPost ? '' : '?action=' + action + (params ? '&' + new URLSearchParams(params).toString() : ''));
   const opts = isPost
     ? { method: 'POST', body: JSON.stringify(Object.assign({ action }, params)), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }
