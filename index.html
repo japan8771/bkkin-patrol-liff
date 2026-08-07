@@ -1128,7 +1128,10 @@ async function initLIFF() {
     userProfile = await liff.getProfile();
 
     setLoader('กำลังตรวจสอบสถานะ...');
-    const status = await api('getMyStatus', { userId: userProfile.userId });
+    let __boot = null;
+    try { __boot = await api('appBootstrap', { userId: userProfile.userId }); } catch (e) { __boot = null; }
+    window.__boot = (__boot && __boot.status) ? __boot : null;
+    const status = window.__boot ? __boot.status : await api('getMyStatus', { userId: userProfile.userId });
 
     if (!status.registered) {
       // ลงทะเบียนอัตโนมัติ (จะเป็น Pending รอ admin approve)
@@ -1193,10 +1196,13 @@ async function initLIFF() {
 
 async function loadAll() {
   setLoader('กำลังโหลดข้อมูลกะ...');
-  const [config, today] = await Promise.all([
+  const [config, today] = (window.__boot && window.__boot.config && window.__boot.todayPatrol)
+      ? [window.__boot.config, window.__boot.todayPatrol]
+      : await Promise.all([
     api('getConfig'),
     api('getTodayPatrol', { userId: userProfile.userId }),
   ]);
+    window.__boot = null;
   appConfig = config;
   // ใช้กะที่กดเข้างานจริง (จาก getTodayPatrol) เป็นหลัก ไม่ใช่กะตามเวลา → จำสถานะได้ถูกกะ
   currentShift = (today && today.currentShift) || config.currentShift;
