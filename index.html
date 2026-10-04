@@ -3649,7 +3649,19 @@ html body #incidentPanel .btn-primary{background:linear-gradient(180deg,#ff6b86,
   function schedule(){ if(pend) return; pend=true; (window.requestAnimationFrame||setTimeout)(run); }
   window.__noThemeRefresh=schedule;
 
+
+  /* ---------- 5) deep link เพิ่มเติมจาก Rich Menu: ?to=seclog (ระบบเดิมไม่มีเคสนี้) ---------- */
+  function extraDeepLink(){
+    var to=null; try{ if(typeof _qparam==='function') to=_qparam('to'); }catch(e){}
+    if(String(to||'').toLowerCase()!=='seclog') return;
+    var tries=0, t=setInterval(function(){
+      tries++; var app=$('mainApp');
+      if(app && app.style.display!=='none' && typeof showSecLog==='function'){ clearInterval(t); try{ showSecLog(); }catch(e){} }
+      else if(tries>150){ clearInterval(t); }
+    },200);
+  }
   function init(){
+    try{ extraDeepLink(); }catch(e){}
     try{ buildTabbar(); }catch(e){}
     run();
     try{

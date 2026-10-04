@@ -1,0 +1,206 @@
+{
+ "a": {
+  "size": {
+   "width": 2500,
+   "height": 1686
+  },
+  "selected": true,
+  "name": "NightOps-A",
+  "chatBarText": "เมนูหลัก",
+  "areas": [
+   {
+    "bounds": {
+     "x": 0,
+     "y": 0,
+     "width": 1250,
+     "height": 210
+    },
+    "action": {
+     "type": "richmenuswitch",
+     "richMenuAliasId": "no-a",
+     "data": "tab=a"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1250,
+     "y": 0,
+     "width": 1250,
+     "height": 210
+    },
+    "action": {
+     "type": "richmenuswitch",
+     "richMenuAliasId": "no-b",
+     "data": "tab=b"
+    }
+   },
+   {
+    "bounds": {
+     "x": 44,
+     "y": 244,
+     "width": 946,
+     "height": 1398
+    },
+    "action": {
+     "type": "uri",
+     "label": "เดินตรวจ",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=patrol"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1022,
+     "y": 244,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "เข้างาน",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=clockin"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1755,
+     "y": 244,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "แจ้งเหตุ",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=incident"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1022,
+     "y": 959,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "บันทึกเหตุการณ์",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=seclog"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1755,
+     "y": 959,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "งานวันนี้",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=events"
+    }
+   }
+  ]
+ },
+ "b": {
+  "size": {
+   "width": 2500,
+   "height": 1686
+  },
+  "selected": true,
+  "name": "NightOps-B",
+  "chatBarText": "เมนูหลัก",
+  "areas": [
+   {
+    "bounds": {
+     "x": 0,
+     "y": 0,
+     "width": 1250,
+     "height": 210
+    },
+    "action": {
+     "type": "richmenuswitch",
+     "richMenuAliasId": "no-a",
+     "data": "tab=a"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1250,
+     "y": 0,
+     "width": 1250,
+     "height": 210
+    },
+    "action": {
+     "type": "richmenuswitch",
+     "richMenuAliasId": "no-b",
+     "data": "tab=b"
+    }
+   },
+   {
+    "bounds": {
+     "x": 44,
+     "y": 244,
+     "width": 946,
+     "height": 1398
+    },
+    "action": {
+     "type": "uri",
+     "label": "จบกะ + ส่งรายงาน",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=patrol"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1022,
+     "y": 244,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "มอบกะ",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=handover"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1755,
+     "y": 244,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "เปลี่ยนกะ",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=swap"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1022,
+     "y": 959,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "ประวัติรายงาน",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=history"
+    }
+   },
+   {
+    "bounds": {
+     "x": 1755,
+     "y": 959,
+     "width": 700,
+     "height": 683
+    },
+    "action": {
+     "type": "uri",
+     "label": "เปิดแอป",
+     "uri": "https://liff.line.me/2009859706-1aeiA65n?to=menu"
+    }
+   }
+  ]
+ }
+}
