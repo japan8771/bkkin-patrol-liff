@@ -1174,32 +1174,7 @@ async function initLIFF() {
     window.__boot = (__boot && __boot.status) ? __boot : null;
     const status = window.__boot ? __boot.status : await api('getMyStatus', { userId: userProfile.userId });
 
-    if (!status.registered) {
-      // ลงทะเบียนอัตโนมัติ (จะเป็น Pending รอ admin approve)
-      setLoader('กำลังลงทะเบียน...');
-      const reg = await api('register', {
-        userId: userProfile.userId,
-        displayName: userProfile.displayName,
-      }, true);
-      showGate(`
-        <div class="icon">⏳</div>
-        <h2>ลงทะเบียนสำเร็จ</h2>
-        <p>ระบบแจ้งผู้ดูแลให้อนุมัติแล้ว<br>ชื่อ: <b>${userProfile.displayName}</b><br>รหัส Guard: <b>${reg.guardId}</b></p>
-        <p style="font-size:11px;color:#888;">📌 เมื่ออนุมัติแล้วจะมีข้อความแจ้งในไลน์<br>จากนั้นปิดและเปิดแอปนี้อีกครั้ง</p>
-        <div class="info-line">หากเร่งด่วน ติดต่อ Security Manager โดยตรง</div>
-      `);
-      return;
-    }
-
-    if (String(status.status).toLowerCase() === 'pending') {
-      showGate(`
-        <div class="icon">⏳</div>
-        <h2>รอการ Approve</h2>
-        <p>คุณ <b>${status.displayName}</b> (${status.guardId}) ลงทะเบียนแล้ว<br>กำลังรอผู้ดูแลอนุมัติ</p>
-        <p style="font-size:11px;color:#888;">📌 ปิดและเปิดแอปอีกครั้งหลัง approve เรียบร้อย</p>
-      `);
-      return;
-    }
+    if (!status.registered || String(status.status).toLowerCase() === 'pending') { await regFlow(status, __kjP); return; }
 
     if (String(status.status).toLowerCase() !== 'active') {
       showGate(`
@@ -3746,6 +3721,15 @@ body.kj-on #noTabbar,body.kj-on .toast{display:none!important}
 .kj-chk h4{margin:0 0 8px;font-size:19px;color:#FBBF24;font-weight:800}
 .kj-chk div{display:flex;gap:10px;font-size:20px;line-height:1.4;padding:5px 0;color:#EAF1FB}
 .kj-chk div:before{content:'☐';color:#5EEAD4;font-weight:900;flex:none}
+.rg-opt{display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:2px solid rgba(255,255,255,.12);border-radius:26px;padding:22px 18px;margin-top:16px;background:linear-gradient(160deg,#16314f,#0f1d33);color:#fff;font-family:inherit;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.35)}
+.rg-opt:active{transform:scale(.98)}
+.rg-opt .ic{width:70px;height:70px;border-radius:20px;display:grid;place-items:center;font-size:38px;flex:none}
+.rg-opt b{display:block;font-size:26px;font-weight:900}.rg-opt small{display:block;font-size:17px;color:#a9bbd3;margin-top:4px;line-height:1.35}
+.rg-opt.k .ic{background:#FBBF24}.rg-opt.h .ic{background:#1E4A7E}
+.rg-opt.sel{border-color:#2DD4BF;box-shadow:0 0 0 4px rgba(45,212,191,.25),0 12px 28px rgba(0,0,0,.35)}
+.rg-h{font-size:30px;font-weight:900;margin:26px 2px 6px}.rg-s{font-size:18px;color:#9fb0c8;line-height:1.5}
+.rg-wait{margin-top:20px;border-radius:24px;padding:20px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.35);text-align:center}
+.rg-wait .t{font-size:24px;font-weight:900;color:#FBBF24}.rg-wait .d{font-size:18px;color:#EAF1FB;margin-top:6px;line-height:1.5}
 .kj-pend{font-size:18px;color:#FBBF24;text-align:center;margin-top:10px}
 /* user admin */
 .us-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:14px 16px;margin-bottom:12px}
@@ -3787,6 +3771,7 @@ body.kj-on #noTabbar,body.kj-on .toast{display:none!important}
 </div>
 <div class="kj-toast" id="kjToast"></div>
 
+<div id="regApp" style="position:fixed;inset:0;z-index:5000;overflow-y:auto;display:none;font-family:Sarabun,'Noto Sans Thai',Tahoma,sans-serif;color:#EAF1FB;background:radial-gradient(120% 60% at 50% -10%,#14304f 0%,#0B1220 55%) fixed,#0B1220"><div class="kj-wrap" id="regIn"></div></div>
 <div id="usrApp"><div class="kj-wrap">
  <div class="kj-wtop"><button class="kj-back" onclick="usrClose()">‹</button><div><div class="kj-wt">ผู้ใช้ &amp; สิทธิ์</div><div class="kj-ws">อนุมัติคนใหม่ และกำหนดว่าเป็น รปภ. โรงแรม หรือ รปภ. KJC</div></div></div>
  <div id="usrList"><div class="kj-note">กำลังโหลด…</div></div>
@@ -3932,6 +3917,45 @@ window.kjSubmit=async function(){
     b.style.display='none'; document.getElementById('kjSubNote').style.display='none'; document.getElementById('kjBackHome').style.display='';
   }catch(e){ toast(e.message||'ส่งไม่สำเร็จ ลองใหม่',1); b.disabled=false; b.innerHTML='📤 ส่งรายงานรอบที่ '+(KJ.r+1)+' (ลองใหม่)'; }
   b._busy=false; };
+
+
+/* ===== first-time sign-up: choose KJC / hotel staff, then wait for approval ===== */
+var REG={status:null,me:null};
+window.regFlow=async function(status,kjP){
+  try{ hideLoader(); }catch(e){}
+  try{ document.getElementById('gateScreen').style.display='none'; document.getElementById('mainApp').style.display='none'; }catch(e){}
+  document.body.classList.add('kj-on'); document.getElementById('regApp').style.display='block';
+  REG.status=status; var me=null; try{ me=await kjP; }catch(e){} REG.me=me;
+  var q=(new URLSearchParams(location.search)).get('reg'); q=(q==='kjc'||q==='hotel')?q:'';
+  var req=(me&&me.teamRequested)||'';
+  if(q && q!==req){ await regSend(q); return; }
+  if(!status.registered || !req){ regChoose(req); return; }
+  regWait(req);
+};
+function regChoose(cur){
+  var name=''; try{ name=userProfile.displayName||''; }catch(e){}
+  document.getElementById('regIn').innerHTML='<div class="kj-top"><div class="kj-logo">HI</div><div class="kj-hi">สวัสดีครับ<b>'+name.replace(/</g,'&lt;')+'</b></div></div>'+
+    '<div class="rg-h">คุณเป็นใคร?</div><div class="rg-s">กดเลือก 1 ข้อ ระบบจะส่งคำขอให้หัวหน้าอนุมัติ</div>'+
+    '<button class="rg-opt k'+(cur==='kjc'?' sel':'')+'" onclick="regSend(\'kjc\')"><span class="ic">🛡️</span><span><b>รปภ. KJC</b><small>เดินตรวจ 2 รอบ/วัน · ถ่ายรูปจุดตรวจ</small></span></button>'+
+    '<button class="rg-opt h'+(cur==='hotel'?' sel':'')+'" onclick="regSend(\'hotel\')"><span class="ic">🏨</span><span><b>พนักงานโรงแรม</b><small>รปภ. โรงแรม · ใช้แอปเดินตรวจเต็มรูปแบบ</small></span></button>'+
+    '<div class="kj-note">ถ้าเลือกผิด กดเปลี่ยนได้ก่อนหัวหน้าอนุมัติ</div>';
+}
+window.regSend=async function(team){
+  document.getElementById('regIn').innerHTML='<div class="kj-note" style="margin-top:80px;font-size:22px">กำลังส่งคำขอ…</div>';
+  try{ var r=await api('registerV2',{userId:userProfile.userId,displayName:userProfile.displayName,team:team},true);
+    if(!r||!r.success) throw new Error((r&&r.error)||'ส่งไม่สำเร็จ');
+    if(r.already && /active/i.test(r.status)){ location.reload(); return; }
+    regWait(team);
+  }catch(e){ document.getElementById('regIn').innerHTML='<div class="kj-note" style="margin-top:60px">ส่งคำขอไม่สำเร็จ<br>'+(e.message||e)+'</div><button class="kj-big" onclick="regChoose(\''+team+'\')">ลองใหม่</button>'; }
+};
+function regWait(team){
+  var name=''; try{ name=userProfile.displayName||''; }catch(e){}
+  document.getElementById('regIn').innerHTML='<div class="kj-top"><div class="kj-logo">HI</div><div class="kj-hi">สวัสดีครับ<b>'+name.replace(/</g,'&lt;')+'</b></div></div>'+
+    '<div class="kj-doneic" style="background:radial-gradient(circle at 35% 30%,#FDE68A,#D97706);box-shadow:0 0 0 14px rgba(251,191,36,.15),0 0 60px rgba(251,191,36,.35)">⏳</div>'+
+    '<div class="rg-wait"><div class="t">รอหัวหน้าอนุมัติ</div><div class="d">คุณขอเข้าใช้เป็น<br><b style="font-size:24px">'+(team==='kjc'?'🛡️ รปภ. KJC':'🏨 พนักงานโรงแรม')+'</b><br>หัวหน้าได้รับแจ้งในไลน์แล้ว</div></div>'+
+    '<div class="kj-note">เมื่ออนุมัติแล้วจะมีข้อความแจ้งในไลน์<br>จากนั้นปิดแอปแล้วเปิดใหม่อีกครั้ง</div>'+
+    '<button class="kj-big" style="background:rgba(255,255,255,.08);color:#cfe0f5;box-shadow:none" onclick="regChoose(\''+team+'\')">เลือกประเภทใหม่</button>';
+}
 
 /* ===== user & role admin (managers) ===== */
 window.usrOpen=async function(){ document.getElementById('usrApp').style.display='block'; document.body.classList.add('kj-on'); await usrLoad(); };
