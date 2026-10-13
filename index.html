@@ -462,6 +462,7 @@
       </div>
       <div class="no-sec">4 · ช่วยเหลือ</div>
       <div class="no-grid">
+        <button class="no-tile wide" id="noUsrTile" style="--c:#FBBF24;display:none" onclick="usrOpen()"><span class="no-ib"><svg class="no-i"><use href="#no-grid"/></svg></span><span><b>ผู้ใช้ &amp; สิทธิ์ <span id="noUsrBadge" style="display:none;background:#FBBF24;color:#3a2600;border-radius:8px;padding:1px 8px;font-size:12px;margin-left:6px"></span></b><small>อนุมัติคนใหม่ · กำหนด รปภ. โรงแรม / รปภ. KJC</small></span></button>
         <button class="no-tile wide" style="--c:#8A97AD" onclick="showHelp()"><span class="no-ib"><svg class="no-i"><use href="#no-help"/></svg></span><span><b>คู่มือ &amp; ช่วยเหลือ</b><small>วิธีใช้ทีละขั้น + เบอร์ติดต่อ</small></span></button>
       </div>
     </div>
@@ -1167,6 +1168,7 @@ async function initLIFF() {
     userProfile = await liff.getProfile();
 
     setLoader('กำลังตรวจสอบสถานะ...');
+    var __kjP = api('kjcMe', { userId: userProfile.userId }).catch(function(){ return null; });
     let __boot = null;
     try { __boot = await api('appBootstrap', { userId: userProfile.userId }); } catch (e) { __boot = null; }
     window.__boot = (__boot && __boot.status) ? __boot : null;
@@ -1182,8 +1184,8 @@ async function initLIFF() {
       showGate(`
         <div class="icon">⏳</div>
         <h2>ลงทะเบียนสำเร็จ</h2>
-        <p>ระบบได้แจ้ง Manager ให้ approve คุณแล้ว<br>ชื่อ: <b>${userProfile.displayName}</b><br>รหัส Guard: <b>${reg.guardId}</b></p>
-        <p style="font-size:11px;color:#888;">📌 หลัง Manager approve ใน Google Sheet แล้ว<br>ปิดและเปิดแอปนี้อีกครั้งเพื่อใช้งาน</p>
+        <p>ระบบแจ้งผู้ดูแลให้อนุมัติแล้ว<br>ชื่อ: <b>${userProfile.displayName}</b><br>รหัส Guard: <b>${reg.guardId}</b></p>
+        <p style="font-size:11px;color:#888;">📌 เมื่ออนุมัติแล้วจะมีข้อความแจ้งในไลน์<br>จากนั้นปิดและเปิดแอปนี้อีกครั้ง</p>
         <div class="info-line">หากเร่งด่วน ติดต่อ Security Manager โดยตรง</div>
       `);
       return;
@@ -1193,7 +1195,7 @@ async function initLIFF() {
       showGate(`
         <div class="icon">⏳</div>
         <h2>รอการ Approve</h2>
-        <p>คุณ <b>${status.displayName}</b> (${status.guardId}) ลงทะเบียนแล้ว<br>กำลังรอ Manager เปลี่ยนสถานะใน Google Sheet</p>
+        <p>คุณ <b>${status.displayName}</b> (${status.guardId}) ลงทะเบียนแล้ว<br>กำลังรอผู้ดูแลอนุมัติ</p>
         <p style="font-size:11px;color:#888;">📌 ปิดและเปิดแอปอีกครั้งหลัง approve เรียบร้อย</p>
       `);
       return;
@@ -1209,6 +1211,12 @@ async function initLIFF() {
     }
 
     guardInfo = status;
+    /* KJC: route by team (รปภ. KJC เห็นเฉพาะหน้าเดินตรวจ KJC) */
+    try{ var __me = await __kjP; window.__kjcMe = __me;
+      var __to = (new URLSearchParams(location.search)).get('to') || '';
+      if(__me && __me.success && (( __me.team === 'kjc' && !__me.isManager) || (__me.isManager && __to === 'kjc'))){ kjcStart(status); return; }
+      if(__me && __me.isManager){ setTimeout(function(){ try{ var t=document.getElementById('noUsrTile'); if(t){ t.style.display=''; var b=document.getElementById('noUsrBadge'); if(b&&__me.pendingUsers){ b.textContent=__me.pendingUsers+' รออนุมัติ'; b.style.display=''; } } if(__to==='users') usrOpen(); }catch(_t){} }, 300); }
+    }catch(_k){}
     await loadAll();
     showMain();
     bindTabs();
@@ -3522,7 +3530,7 @@ html body #incidentPanel .btn-primary{background:linear-gradient(180deg,#ff6b86,
     return 'hsla('+Math.round(H[0])+',70%,60%,.45)'; }
 
   /* ---------- 1) inline-style adapter (สีที่เขียนฝังในโค้ดเดิม) ---------- */
-  function skip(el){ return !el || el.nodeType!==1 || el instanceof SVGElement || el.tagName==='IMG' || el.tagName==='CANVAS' || el===__cv || (el.closest && el.closest('.no-home,#noTabbar,.brand-mark')); }
+  function skip(el){ return !el || el.nodeType!==1 || el instanceof SVGElement || el.tagName==='IMG' || el.tagName==='CANVAS' || el===__cv || (el.closest && el.closest('.no-home,#noTabbar,.brand-mark,#kjcApp,#usrApp,#kjToast')); }
   function fixInline(el){
     if(skip(el)) return;
     var st=el.getAttribute('style'); if(!st || el.__noLast===st) return;
@@ -3674,5 +3682,282 @@ html body #incidentPanel .btn-primary{background:linear-gradient(180deg,#ff6b86,
 })();
 
 </script>
+<!-- ===== KJC MODULE (role-based screens: KJC patrol + user/role admin) ===== -->
+<style id="kjc-style">
+#kjcApp,#usrApp{position:fixed;inset:0;z-index:5000;overflow-y:auto;display:none;font-family:"Sarabun","Noto Sans Thai","Leelawadee UI",Tahoma,sans-serif;color:#EAF1FB;background:radial-gradient(120% 60% at 50% -10%,#14304f 0%,#0B1220 55%) fixed,#0B1220;-webkit-tap-highlight-color:transparent}
+#kjcApp *,#usrApp *{box-sizing:border-box}
+body.kj-on #noTabbar,body.kj-on .toast{display:none!important}
+.kj-wrap{max-width:520px;margin:0 auto;padding:18px 18px 40px}
+.kj-top{display:flex;align-items:center;gap:10px;margin:6px 2px 16px}
+.kj-logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#2DD4BF,#0EA5E9);display:grid;place-items:center;font-weight:900;color:#04201c;font-size:16px;flex:none}
+.kj-hi{font-size:16px;color:#9fb0c8;line-height:1.25}.kj-hi b{display:block;color:#fff;font-size:24px}
+.kj-tag{margin-left:auto;background:#FBBF24;color:#3a2600;font-weight:800;border-radius:12px;padding:7px 12px;font-size:16px;flex:none}
+.kj-shift{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:22px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.kj-shift .t{font-size:18px;color:#9fb0c8}.kj-shift .v{font-size:30px;font-weight:900}
+.kj-round{border-radius:28px;padding:20px;margin-bottom:16px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(160deg,#16314f,#0f1d33);box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.kj-round.done{background:linear-gradient(160deg,#0f4038,#0c2a29);border-color:#2DD4BF55}
+.kj-round.lock{opacity:.5}
+.kj-round h2{margin:0;font-size:32px;font-weight:900}
+.kj-round .st{font-size:19px;color:#a9bbd3;margin:4px 0 14px}
+.kj-bar{height:18px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden}
+.kj-bar i{display:block;height:100%;background:linear-gradient(90deg,#2DD4BF,#22D3EE);border-radius:10px;transition:width .4s}
+.kj-big{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;border:0;border-radius:24px;padding:22px 16px;font-size:27px;font-weight:900;font-family:inherit;color:#04201c;background:linear-gradient(180deg,#5EEAD4,#14B8A6);box-shadow:0 10px 0 #0d7f73,0 18px 30px rgba(20,184,166,.35);margin-top:16px;cursor:pointer;transition:transform .08s,box-shadow .08s}
+.kj-big:active{transform:translateY(8px);box-shadow:0 2px 0 #0d7f73}
+.kj-big[disabled]{background:#2a3550;color:#8796ae;box-shadow:0 10px 0 #182032}
+.kj-big.cam{font-size:34px;padding:32px 16px;border-radius:30px}
+.kj-note{font-size:17px;color:#8796ae;text-align:center;margin-top:14px;line-height:1.55}
+.kj-wtop{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+.kj-back{width:56px;height:56px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;font-size:30px;cursor:pointer;flex:none}
+.kj-wt{font-size:22px;font-weight:800}.kj-ws{font-size:16px;color:#9fb0c8}
+.kj-count{margin-left:auto;font-size:32px;font-weight:900;color:#5EEAD4}.kj-count small{font-size:18px;color:#8796ae}
+.kj-cp{margin-top:16px;border-radius:30px;padding:26px 20px;text-align:center;background:linear-gradient(170deg,#1b3a5e,#11233b);border:1px solid rgba(94,234,212,.25);box-shadow:0 0 0 6px rgba(45,212,191,.06),0 20px 40px rgba(0,0,0,.4)}
+.kj-cp .lbl{font-size:19px;color:#9fb0c8}
+.kj-cp .fl{display:inline-block;margin:12px 0 8px;font-size:46px;font-weight:900;background:#FBBF24;color:#3a2600;border-radius:18px;padding:4px 18px;line-height:1.2}
+.kj-cp .nm{font-size:31px;font-weight:900;line-height:1.3}
+.kj-th{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.kj-th div{width:96px;height:96px;border-radius:16px;background-size:cover;background-position:center;position:relative;border:2px solid rgba(255,255,255,.15)}
+.kj-th div span{position:absolute;right:-7px;top:-7px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:17px;font-weight:900}
+.kj-up{background:#FBBF24;color:#3a2600}.kj-ok{background:#22C55E;color:#052e16}.kj-er{background:#F87171;color:#3b0a0a}
+.kj-stt{font-size:23px;font-weight:800;text-align:center;margin-top:14px;min-height:32px}
+.kj-list{margin-top:18px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
+.kj-list summary{font-size:20px;font-weight:800;cursor:pointer;padding:10px 4px;color:#cfe0f5}
+.kj-li{display:flex;align-items:center;gap:12px;padding:13px 10px;border-radius:16px;font-size:20px;cursor:pointer}
+.kj-li:nth-child(odd){background:rgba(255,255,255,.03)}
+.kj-li .n{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:900;background:#22314b;flex:none}
+.kj-li.d .n{background:#22C55E;color:#052e16}.kj-li.c .n{background:#FBBF24;color:#3a2600}.kj-li.d{color:#7fe3a5}
+.kj-doneic{width:150px;height:150px;border-radius:50%;margin:40px auto 10px;display:grid;place-items:center;font-size:84px;background:radial-gradient(circle at 35% 30%,#86EFAC,#16A34A);box-shadow:0 0 0 14px rgba(34,197,94,.15),0 0 60px rgba(34,197,94,.45);color:#052e16;font-weight:900}
+.kj-dt{font-size:34px;font-weight:900;text-align:center;margin:18px 0 6px}
+.kj-dd{font-size:21px;color:#a9bbd3;text-align:center;line-height:1.5}
+.kj-sum{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.kj-sum div{background:rgba(255,255,255,.05);border-radius:20px;padding:14px;text-align:center;font-size:17px;color:#9fb0c8}.kj-sum b{display:block;font-size:30px;color:#fff}
+.kj-toast{position:fixed;left:16px;right:16px;bottom:22px;max-width:488px;margin:0 auto;background:#22C55E;color:#052e16;border-radius:20px;padding:16px;font-size:21px;font-weight:900;text-align:center;transform:translateY(calc(100% + 60px));transition:transform .3s;z-index:5100}
+.kj-toast.on{transform:none}.kj-toast.bad{background:#F87171;color:#3b0a0a}
+.kj-cam{position:fixed;inset:0;background:#000;z-index:5200;display:none}
+.kj-cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.kj-cam .bar{position:absolute;left:0;right:0;top:0;padding:16px 18px;background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,0));font-size:22px;font-weight:800;color:#fff;font-family:"Sarabun",Tahoma,sans-serif}
+.kj-cam .bar small{display:block;font-size:17px;color:#FBBF24;margin-top:2px}
+.kj-cam .ctl{position:absolute;left:0;right:0;bottom:0;padding:22px 0 36px;display:flex;align-items:center;justify-content:center;gap:40px;background:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,0))}
+.kj-cam .shut{width:96px;height:96px;border-radius:50%;border:7px solid #fff;background:#2DD4BF;box-shadow:0 0 0 4px rgba(45,212,191,.4);cursor:pointer}
+.kj-cam .shut:active{transform:scale(.92)}
+.kj-cam .x{width:62px;height:62px;border-radius:50%;border:0;background:rgba(255,255,255,.18);color:#fff;font-size:28px;cursor:pointer}
+.kj-cam .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+.kj-cam .n{min-width:62px;color:#fff;font:800 20px Sarabun,Tahoma,sans-serif;text-align:center}
+.kj-chk{text-align:left;margin:16px 2px 4px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:14px 16px}
+.kj-chk h4{margin:0 0 8px;font-size:19px;color:#FBBF24;font-weight:800}
+.kj-chk div{display:flex;gap:10px;font-size:20px;line-height:1.4;padding:5px 0;color:#EAF1FB}
+.kj-chk div:before{content:'☐';color:#5EEAD4;font-weight:900;flex:none}
+.kj-pend{font-size:18px;color:#FBBF24;text-align:center;margin-top:10px}
+/* user admin */
+.us-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:14px 16px;margin-bottom:12px}
+.us-card .nm{font-size:21px;font-weight:800}.us-card .sub{font-size:15px;color:#9fb0c8;margin-top:2px}
+.us-chip{display:inline-block;border-radius:10px;padding:3px 10px;font-size:14px;font-weight:800;margin-right:6px}
+.us-h{background:#1E4A7E;color:#cfe3ff}.us-k{background:#FBBF24;color:#3a2600}.us-p{background:#F59E0B33;color:#FBBF24;border:1px solid #FBBF2466}.us-s{background:#F8717133;color:#FCA5A5}
+.us-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.us-btns button{flex:1;min-width:120px;border:0;border-radius:14px;padding:13px 8px;font-family:inherit;font-size:17px;font-weight:800;cursor:pointer}
+.us-b1{background:#1E4A7E;color:#fff}.us-b2{background:#FBBF24;color:#3a2600}.us-b3{background:rgba(255,255,255,.08);color:#FCA5A5}
+.us-sec{font-size:18px;font-weight:800;color:#cfe0f5;margin:18px 4px 10px}
+</style>
+
+<div id="kjcApp">
+ <div class="kj-wrap" id="kjHome">
+  <div class="kj-top"><div class="kj-logo">HI</div><div class="kj-hi">สวัสดีครับ<b id="kjName">—</b></div><div class="kj-tag">รปภ. KJC</div></div>
+  <div class="kj-shift"><div><div class="t">กะทำงานวันนี้</div><div class="v">09:00 – 21:00</div></div><div style="font-size:46px">🛡️</div></div>
+  <div id="kjRounds"><div class="kj-note">กำลังโหลด…</div></div>
+  <div class="kj-note">เดินวันละ 2 รอบ · รอบละ 24 จุด · ไม่จำกัดเวลา<br>ถ่ายจากกล้อง 2 รูปต่อจุด · เดินครบแล้วกด "ส่งรายงาน" ทุกรอบ</div>
+  <div class="kj-pend" id="kjPend"></div>
+ </div>
+ <div class="kj-wrap" id="kjWalk" style="display:none">
+  <div class="kj-wtop"><button class="kj-back" onclick="kjHomeShow()">‹</button><div><div class="kj-wt" id="kjWT">รอบที่ 1</div><div class="kj-ws">เดินตามลำดับ หรือแตะเลือกจุดด้านล่าง</div></div><div class="kj-count" id="kjWC">0<small>/24</small></div></div>
+  <div class="kj-bar"><i id="kjWBar" style="width:0"></i></div>
+  <div class="kj-cp"><div class="lbl" id="kjL">จุดที่ 1</div><div class="fl" id="kjF">—</div><div class="nm" id="kjN">—</div><div class="kj-chk" id="kjChk"></div><div class="kj-th" id="kjTh"></div><div class="kj-stt" id="kjStt"></div></div>
+  <button class="kj-big cam" id="kjCam" onclick="kjCamOpen()">📷 ถ่ายรูป</button>
+  <input type="file" id="kjFile" accept="image/*" capture="environment" style="display:none" onchange="kjGot(this)">
+  <div class="kj-cam" id="kjCamUI"><video id="kjVid" playsinline autoplay muted></video><div class="flash" id="kjFlash"></div>
+   <div class="bar"><span id="kjCamT">—</span><small id="kjCamS">รูปที่ 1 จาก 2</small></div>
+   <div class="ctl"><button class="x" onclick="kjCamClose()">✕</button><button class="shut" id="kjShut" onclick="kjSnap()" aria-label="ถ่ายรูป"></button><div class="n" id="kjCamN">0/2</div></div></div>
+  <details class="kj-list"><summary>📋 ดูจุดทั้งหมดในรอบนี้</summary><div id="kjLst"></div></details>
+ </div>
+ <div class="kj-wrap" id="kjDone" style="display:none">
+  <div class="kj-doneic">✓</div><div class="kj-dt" id="kjDT">เดินครบแล้ว</div><div class="kj-dd" id="kjDD"></div>
+  <div class="kj-sum"><div><b id="kjS1">24</b>จุดที่เดิน</div><div><b id="kjS2">0</b>รูปที่ส่ง</div><div><b id="kjS3">—</b>เริ่ม</div><div><b id="kjS4">—</b>จบ</div></div>
+  <button class="kj-big" id="kjSubmit" onclick="kjSubmit()" style="background:linear-gradient(180deg,#FCD34D,#F59E0B);box-shadow:0 10px 0 #b45309,0 18px 30px rgba(245,158,11,.35);color:#3a2600">📤 ส่งรายงานรอบนี้</button>
+  <button class="kj-big" id="kjBackHome" onclick="kjHomeShow()" style="display:none">กลับหน้าแรก</button>
+  <div class="kj-note" id="kjSubNote">ต้องกดส่งรายงานทุกรอบ หัวหน้าจะได้รับในไลน์ทันที</div>
+ </div>
+</div>
+<div class="kj-toast" id="kjToast"></div>
+
+<div id="usrApp"><div class="kj-wrap">
+ <div class="kj-wtop"><button class="kj-back" onclick="usrClose()">‹</button><div><div class="kj-wt">ผู้ใช้ &amp; สิทธิ์</div><div class="kj-ws">อนุมัติคนใหม่ และกำหนดว่าเป็น รปภ. โรงแรม หรือ รปภ. KJC</div></div></div>
+ <div id="usrList"><div class="kj-note">กำลังโหลด…</div></div>
+</div></div>
+
+<script id="kjc-js">
+(function(){
+var KJ={data:null,r:0,i:0,local:{}};   // local[round|cpId] = [{u,st:'up'|'ok'|'err',shotId}]
+function uid(){ try{ return userProfile.userId; }catch(e){ return ''; } }
+function toast(m,bad){ var t=document.getElementById('kjToast'); t.textContent=m; t.className='kj-toast on'+(bad?' bad':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='kj-toast'+(bad?' bad':''); },1600); }
+function hm(){ var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function show(id){ ['kjHome','kjWalk','kjDone'].forEach(function(x){ document.getElementById(x).style.display=(x===id?'block':'none'); }); window.scrollTo(0,0); document.getElementById('kjcApp').scrollTop=0; }
+function key(r,cp){ return r+'|'+cp; }
+var NEED=2;
+function taken(r,cp){ var p=KJ.data.rounds[r].points.find(function(x){return x.id===cp;}); return ((p&&p.photos)||0)+(KJ.local[key(r,cp)]||[]).length; }
+function isDone(r,cp){ return taken(r,cp)>=NEED; }
+function doneN(r){ return KJ.data.rounds[r].points.filter(function(p){ return isDone(r,p.id); }).length; }
+function pending(){ var n=0; Object.keys(KJ.local).forEach(function(k){ KJ.local[k].forEach(function(x){ if(x.st!=='ok') n++; }); }); return n; }
+
+window.kjcStart=async function(status){
+  try{ hideLoader(); }catch(e){}
+  try{ document.getElementById('gateScreen').style.display='none'; document.getElementById('mainApp').style.display='none'; }catch(e){}
+  document.getElementById('kjcApp').style.display='block'; document.body.classList.add('kj-on');
+  document.getElementById('kjName').textContent=(status&&status.displayName)||'';
+  await kjLoad();
+};
+async function kjLoad(){
+  try{ var r=await api('kjcToday',{userId:uid()}); if(!r||!r.success) throw new Error((r&&r.error)||'โหลดไม่สำเร็จ'); KJ.data=r; kjHomeRender(); }
+  catch(e){ document.getElementById('kjRounds').innerHTML='<div class="kj-note">โหลดข้อมูลไม่สำเร็จ<br>'+(e.message||e)+'</div><button class="kj-big" onclick="location.reload()">ลองใหม่</button>'; }
+}
+function kjHomeRender(){
+  var box=document.getElementById('kjRounds'); box.innerHTML='';
+  KJ.data.rounds.forEach(function(R,ri){
+    var n=doneN(ri), all=n>=R.points.length, sub=!!R.submitted, lock=ri===1 && !KJ.data.rounds[0].submitted;
+    var d=document.createElement('div'); d.className='kj-round'+(sub?' done':'')+(lock?' lock':'');
+    var st=sub?'ส่งรายงานแล้ว '+(R.submittedAt||'')+(R.start?' · เดิน '+R.start+' – '+(R.end||''):''):all?'เดินครบแล้ว — <b style="color:#FBBF24">ยังไม่ได้ส่งรายงาน</b>':lock?'🔒 ส่งรายงานรอบที่ 1 ก่อน':n?'เดินไปแล้ว '+n+' จาก '+R.points.length+' จุด':'ยังไม่เริ่ม · '+R.points.length+' จุด';
+    var btn=sub?'':all?'<button class="kj-big" style="background:linear-gradient(180deg,#FCD34D,#F59E0B);box-shadow:0 10px 0 #b45309;color:#3a2600" onclick="kjOpenSubmit('+ri+')">📤 ส่งรายงานรอบที่ '+(ri+1)+'</button>':'<button class="kj-big" '+(lock?'disabled':'')+' onclick="kjGo('+ri+')">'+(n?'▶ เดินต่อ':'▶ เริ่มเดินรอบที่ '+(ri+1))+'</button>';
+    d.innerHTML='<h2>'+(sub?'✅ ':'')+'รอบที่ '+(ri+1)+'</h2><div class="st">'+st+'</div><div class="kj-bar"><i style="width:'+(n/R.points.length*100)+'%"></i></div>'+btn;
+    box.appendChild(d); });
+  var p=pending(); document.getElementById('kjPend').textContent=p?('⏳ มีรูปรอส่ง '+p+' รูป — ระบบกำลังส่งให้'):'';
+}
+window.kjHomeShow=function(){ show('kjHome'); kjHomeRender(); };
+window.kjOpenSubmit=function(ri){ KJ.r=ri; finish(ri,{}); };
+window.kjGo=function(ri){ KJ.r=ri; var pts=KJ.data.rounds[ri].points; var nx=pts.findIndex(function(p){return !isDone(ri,p.id);}); KJ.i=nx<0?0:nx; show('kjWalk'); kjWalk(); };
+window.kjJump=function(i){ KJ.i=i; kjWalk(); window.scrollTo(0,0); document.getElementById('kjcApp').scrollTop=0; };
+function kjWalk(){
+  var R=KJ.data.rounds[KJ.r], p=R.points[KJ.i], n=doneN(KJ.r), tot=R.points.length;
+  document.getElementById('kjWT').textContent='รอบที่ '+(KJ.r+1);
+  document.getElementById('kjWC').innerHTML=n+'<small>/'+tot+'</small>';
+  document.getElementById('kjWBar').style.width=(n/tot*100)+'%';
+  document.getElementById('kjL').textContent='จุดที่ '+(KJ.i+1)+' จาก '+tot;
+  document.getElementById('kjF').textContent=p.floor||'—';
+  document.getElementById('kjN').textContent=p.name;
+  document.getElementById('kjChk').innerHTML=(p.check&&p.check.length)?'<h4>🔎 สิ่งที่ต้องตรวจดูที่จุดนี้</h4>'+p.check.map(function(t){ return '<div>'+String(t).replace(/</g,'&lt;')+'</div>'; }).join(''):'';
+  var sh=KJ.local[key(KJ.r,p.id)]||[];
+  var srv=(p.photos||0);
+  var th=''; for(var k=0;k<Math.max(0,srv);k++) th+='<div style="background:#22314b;display:grid;place-items:center;font-size:30px">🖼️<span class="kj-ok">✓</span></div>';
+  th+=sh.map(function(x){ return '<div style="background-image:url('+x.u+')"><span class="'+(x.st==='ok'?'kj-ok':x.st==='err'?'kj-er':'kj-up')+'">'+(x.st==='ok'?'✓':x.st==='err'?'!':'↑')+'</span></div>'; }).join('');
+  document.getElementById('kjTh').innerHTML=th;
+  var up=sh.some(function(x){return x.st==='up';}), er=sh.some(function(x){return x.st==='err';});
+  document.getElementById('kjStt').innerHTML=up?'<span style="color:#FBBF24">กำลังส่งรูป…</span>':er?'<span style="color:#FCA5A5">ส่งไม่สำเร็จ ระบบจะลองส่งใหม่เอง</span>':isDone(KJ.r,p.id)?'<span style="color:#86EFAC">✓ ครบ 2 รูปแล้ว</span>':taken(KJ.r,p.id)?'<span style="color:#FBBF24">ถ่ายอีก 1 รูป</span>':'<span style="color:#9fb0c8">ถ่าย 2 รูปต่อจุด</span>';
+  var tk=taken(KJ.r,p.id); document.getElementById('kjCam').innerHTML=tk>=NEED?'📷 ถ่ายเพิ่ม (ไม่บังคับ)':tk?'📷 ถ่ายรูปที่ 2':'📷 ถ่ายรูป (2 รูป)';
+  document.getElementById('kjLst').innerHTML=R.points.map(function(q,i){ var d=isDone(KJ.r,q.id); return '<div class="kj-li'+(d?' d':'')+(i===KJ.i?' c':'')+'" onclick="kjJump('+i+')"><div class="n">'+(d?'✓':i+1)+'</div><div>'+(q.floor?q.floor+' · ':'')+q.name+'</div></div>'; }).join('');
+}
+/* ---- camera only: live in-app camera (no gallery). Fallback = phone camera, rejects old/gallery photos ---- */
+var CAM={stream:null};
+window.kjCamOpen=async function(){
+  var p=KJ.data.rounds[KJ.r].points[KJ.i];
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw new Error('nocam');
+    CAM.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+    var v=document.getElementById('kjVid'); v.srcObject=CAM.stream; try{ await v.play(); }catch(e){}
+    document.getElementById('kjCamUI').style.display='block'; camLabel();
+  }catch(e){ document.getElementById('kjFile').click(); }
+};
+function camLabel(){ var p=KJ.data.rounds[KJ.r].points[KJ.i]; var tk=taken(KJ.r,p.id);
+  document.getElementById('kjCamT').textContent=(p.floor?p.floor+' · ':'')+p.name;
+  document.getElementById('kjCamS').textContent=tk>=NEED?'ครบ 2 รูปแล้ว':'รูปที่ '+(tk+1)+' จาก 2';
+  document.getElementById('kjCamN').textContent=Math.min(tk,NEED)+'/2'; }
+window.kjCamClose=function(){ try{ CAM.stream&&CAM.stream.getTracks().forEach(function(t){t.stop();}); }catch(e){} CAM.stream=null; document.getElementById('kjCamUI').style.display='none'; };
+window.kjSnap=function(){
+  var v=document.getElementById('kjVid'); if(!v.videoWidth) return;
+  var w=v.videoWidth, h=v.videoHeight, m=1280; if(Math.max(w,h)>m){ var k=m/Math.max(w,h); w=Math.round(w*k); h=Math.round(h*k); }
+  var c=document.createElement('canvas'); c.width=w; c.height=h; var g=c.getContext('2d'); g.drawImage(v,0,0,w,h); try{ _stampTime(g,w,h); }catch(e){}
+  var f=document.getElementById('kjFlash'); f.style.opacity=.8; setTimeout(function(){ f.style.opacity=0; },120);
+  addShot(c.toDataURL('image/jpeg',0.72));
+};
+window.kjGot=async function(inp){
+  var f=inp.files&&inp.files[0]; inp.value=''; if(!f) return;
+  if(!f.lastModified || Math.abs(Date.now()-f.lastModified)>3*60*1000){ toast('ใช้ได้เฉพาะรูปที่ถ่ายจากกล้องตอนนี้เท่านั้น',1); return; }
+  var u; try{ u=await resizeImage(f,1280,0.72,true); }catch(e){ toast('อ่านรูปไม่ได้ ลองถ่ายใหม่',1); return; }
+  addShot(u);
+};
+function addShot(u){
+  var r=KJ.r, p=KJ.data.rounds[r].points[KJ.i];
+  var shot={u:u,st:'up',shotId:'K'+Date.now()+Math.floor(Math.random()*1000),round:r+1,cp:p.id,tries:0};
+  (KJ.local[key(r,p.id)]=KJ.local[key(r,p.id)]||[]).push(shot);
+  send(shot);
+  var tk=taken(r,p.id);
+  if(tk===NEED){ toast('✓ ครบ 2 รูป ไปจุดถัดไป'); kjCamClose();
+    setTimeout(function(){ var nx=KJ.data.rounds[r].points.findIndex(function(q){return !isDone(r,q.id);});
+      if(nx<0){ finish(r,{}); } else { KJ.i=nx; kjWalk(); window.scrollTo(0,0); document.getElementById('kjcApp').scrollTop=0; } },700);
+  } else if(tk<NEED){ toast('✓ รูปที่ '+tk+' แล้ว — ถ่ายอีก 1 รูป'); camLabel(); kjWalk(); }
+  else { toast('✓ บันทึกรูปเพิ่มแล้ว'); kjCamClose(); kjWalk(); }
+}
+async function send(shot,advance){
+  shot.st='up'; shot.tries++; if(KJ.data && document.getElementById('kjWalk').style.display!=='none') kjWalk();
+  var gps=null; try{ gps=await getGpsCoords(4000); }catch(e){}
+  try{
+    var res=await api('kjcShot',{userId:uid(),round:shot.round,cpId:shot.cp,shotId:shot.shotId,photo:shot.u,gps:gps?(gps.lat+','+gps.lng+'|'+Math.round(gps.accuracy)+'m'):''},true);
+    if(!res||!res.success) throw new Error((res&&res.error)||'fail');
+    shot.st='ok';
+    var R=KJ.data.rounds[shot.round-1]; if(res.round){ R.start=res.round.start||R.start; R.end=res.round.end||R.end; }
+    if(document.getElementById('kjWalk').style.display!=='none') kjWalk();
+    if(document.getElementById('kjHome').style.display!=='none') kjHomeRender();
+    if(document.getElementById('kjDone').style.display!=='none') kjDoneNote();
+  }catch(e){
+    shot.st='err'; if(document.getElementById('kjWalk').style.display!=='none') kjWalk();
+    setTimeout(function(){ send(shot,false); }, Math.min(30000, 4000*shot.tries));
+  }
+}
+function finish(ri,info){
+  var R=KJ.data.rounds[ri]; var c=0; Object.keys(KJ.local).forEach(function(k){ if(k.indexOf((ri)+'|')===0) c+=KJ.local[k].length; });
+  R.points.forEach(function(p){ var loc=(KJ.local[key(ri,p.id)]||[]).length; if(!loc) c+=(p.photos||0); });
+  document.getElementById('kjDT').textContent='เดินครบรอบที่ '+(ri+1)+' แล้ว'; document.getElementById('kjDD')._base=null;
+  document.getElementById('kjDD').innerHTML='กดปุ่มสีเหลืองด้านล่าง<br>เพื่อส่งรายงานรอบที่ '+(ri+1)+' ให้หัวหน้า';
+  document.getElementById('kjSubmit').style.display=''; document.getElementById('kjBackHome').style.display='none'; document.getElementById('kjSubNote').style.display='';
+  document.getElementById('kjSubmit').innerHTML='📤 ส่งรายงานรอบที่ '+(ri+1);
+  document.getElementById('kjS1').textContent=R.points.length; document.getElementById('kjS2').textContent=c;
+  document.getElementById('kjS3').textContent=R.start||info.start||'—'; document.getElementById('kjS4').textContent=R.end||info.end||hm();
+  show('kjDone'); kjDoneNote();
+}
+function kjDoneNote(){ var n=pending(); var e=document.getElementById('kjDD'); if(!e._base) e._base=e.innerHTML; e.innerHTML=e._base+(n?'<br><span style="color:#FBBF24">⏳ กำลังส่งรูปที่เหลือ '+n+' รูป — อย่าเพิ่งปิดแอป</span>':'');
+  var b=document.getElementById('kjSubmit'); if(b.style.display!=='none' && !b._busy){ b.disabled=!!n; b.innerHTML=n?'⏳ รอส่งรูปให้ครบก่อน ('+n+')':'📤 ส่งรายงานรอบที่ '+(KJ.r+1); } }
+window.kjSubmit=async function(){
+  var b=document.getElementById('kjSubmit'); if(pending()){ toast('รอส่งรูปให้ครบก่อน',1); return; }
+  b._busy=true; b.disabled=true; b.innerHTML='กำลังส่งรายงาน…';
+  try{ var r=await api('kjcSubmit',{userId:uid(),round:KJ.r+1},true);
+    if(!r||!r.success){ var m=(r&&r.error)||'ส่งไม่สำเร็จ'; if(r&&r.missing&&r.missing.length) m+='\nจุดที่ยังไม่ครบ: '+r.missing.join(', '); throw new Error(m); }
+    var R=KJ.data.rounds[KJ.r]; R.submitted=true; R.submittedAt=r.at||hm();
+    document.getElementById('kjDT').textContent='ส่งรายงานรอบที่ '+(KJ.r+1)+' แล้ว';
+    var dd=document.getElementById('kjDD'); dd._base=null; dd.innerHTML=KJ.r===0?'หัวหน้าจะได้รับรายงานในไลน์ภายใน 1–2 นาที<br>พักได้ แล้วค่อยเดินรอบที่ 2':'ครบ 2 รอบของวันนี้แล้ว<br>หัวหน้าจะได้รับรายงานในไลน์ ขอบคุณครับ';
+    b.style.display='none'; document.getElementById('kjSubNote').style.display='none'; document.getElementById('kjBackHome').style.display='';
+  }catch(e){ toast(e.message||'ส่งไม่สำเร็จ ลองใหม่',1); b.disabled=false; b.innerHTML='📤 ส่งรายงานรอบที่ '+(KJ.r+1)+' (ลองใหม่)'; }
+  b._busy=false; };
+
+/* ===== user & role admin (managers) ===== */
+window.usrOpen=async function(){ document.getElementById('usrApp').style.display='block'; document.body.classList.add('kj-on'); await usrLoad(); };
+window.usrClose=function(){ document.getElementById('usrApp').style.display='none'; if(document.getElementById('kjcApp').style.display!=='block') document.body.classList.remove('kj-on'); };
+async function usrLoad(){
+  var box=document.getElementById('usrList');
+  try{ var r=await api('usersList',{userId:uid()}); if(!r||!r.success) throw new Error((r&&r.error)||'ไม่มีสิทธิ์');
+    var pend=r.users.filter(function(u){return String(u.status).toLowerCase()==='pending';}), act=r.users.filter(function(u){return String(u.status).toLowerCase()==='active';}), oth=r.users.filter(function(u){var s=String(u.status).toLowerCase(); return s!=='pending'&&s!=='active';});
+    function card(u){ var s=String(u.status).toLowerCase(), k=u.role==='kjc';
+      var chips=(s==='pending'?'<span class="us-chip us-p">⏳ รออนุมัติ</span>':s==='active'?'<span class="us-chip '+(k?'us-k':'us-h')+'">'+(k?'รปภ. KJC':'รปภ. โรงแรม')+'</span>':'<span class="us-chip us-s">ระงับ</span>');
+      var b='';
+      if(s!=='active' || k) b+='<button class="us-b1" onclick="usrSet(\''+u.guardId+'\',\'hotel\',\'Active\')">✓ รปภ. โรงแรม</button>';
+      if(s!=='active' || !k) b+='<button class="us-b2" onclick="usrSet(\''+u.guardId+'\',\'kjc\',\'Active\')">✓ รปภ. KJC</button>';
+      if(s!=='suspended') b+='<button class="us-b3" onclick="usrSet(\''+u.guardId+'\',\''+(u.role||'hotel')+'\',\'Suspended\')">ระงับ</button>';
+      return '<div class="us-card"><div class="nm">'+(u.name||'-')+'</div><div class="sub">'+chips+u.guardId+(u.registeredAt?' · ลงทะเบียน '+u.registeredAt:'')+'</div><div class="us-btns">'+b+'</div></div>'; }
+    box.innerHTML=(pend.length?'<div class="us-sec">⏳ รออนุมัติ ('+pend.length+')</div>'+pend.map(card).join(''):'<div class="kj-note">ไม่มีคนรออนุมัติ</div>')+
+      '<div class="us-sec">ใช้งานอยู่ ('+act.length+')</div>'+act.map(card).join('')+(oth.length?'<div class="us-sec">ระงับ ('+oth.length+')</div>'+oth.map(card).join(''):'');
+  }catch(e){ box.innerHTML='<div class="kj-note">'+(e.message||e)+'</div>'; }
+}
+window.usrSet=async function(gid,role,status){
+  try{ var r=await api('userSetRole',{userId:uid(),guardId:gid,role:role,status:status},true); if(!r||!r.success) throw new Error((r&&r.error)||'ไม่สำเร็จ'); toast('✓ บันทึกแล้ว'); await usrLoad(); }
+  catch(e){ toast(e.message||'ไม่สำเร็จ',1); }
+};
+})();
+</script>
+<!-- ===== /KJC MODULE ===== -->
+
 </body>
 </html>
