@@ -355,7 +355,7 @@
   .hh-empty{text-align:center;color:#6B7A90;font-size:15px;padding:46px 20px;line-height:1.9;}
   .sw-card{background:#fff;border-radius:16px;border:1px solid #E1E7EF;padding:14px;margin-bottom:13px;box-shadow:0 4px 12px rgba(20,47,84,.07);}
   .sw-lbl{font-size:14px;font-weight:600;color:#1A3D6B;margin-bottom:9px;} .sw-from{font-size:16px;font-weight:700;color:#26323f;}
-  .sw-segs{display:flex;gap:9px;} .swseg{flex:1;text-align:center;border:1.5px solid #E1E7EF;background:#fff;color:#6B7A90;font-family:inherit;font-size:15px;font-weight:700;padding:12px 6px;border-radius:13px;cursor:pointer;} .swseg.on{background:linear-gradient(178deg,#2A4F80,#1A3D6B);color:#fff;border-color:#142F54;box-shadow:0 3px 0 #0E2342;}
+  .sw-segs{display:flex;gap:9px;flex-wrap:wrap;} .swseg{flex:1 1 28%;text-align:center;border:1.5px solid #E1E7EF;background:#fff;color:#6B7A90;font-family:inherit;font-size:15px;font-weight:700;padding:12px 6px;border-radius:13px;cursor:pointer;} .swseg.on{background:linear-gradient(178deg,#2A4F80,#1A3D6B);color:#fff;border-color:#142F54;box-shadow:0 3px 0 #0E2342;}
   #swapScreen textarea, #swapScreen input{width:100%;font-family:inherit;font-size:15px;border:1.5px solid #E1E7EF;border-radius:12px;padding:12px;color:#26323f;} #swapScreen textarea{min-height:80px;resize:none;}
 </style>
 </head>
@@ -475,7 +475,7 @@
       <div class="hstep"><div class="hn">4</div><div><div class="hh">📝 ก่อนจบกะ → มอบกะ</div><div class="hp">ฝากโน้ตสิ่งที่ต้องส่งต่อให้กะถัดไป และกดรับทราบโน้ตที่ได้รับ</div></div></div>
       <div class="hstep" style="margin-bottom:0;"><div class="hn">5</div><div><div class="hh">🏁 จบกะ</div><div class="hp">กด "จบกะ + ส่งรายงาน" ระบบสรุปรอบกะเป็น PDF ส่งเข้า LINE ผู้จัดการ + ทุกคนอัตโนมัติ</div></div></div>
     </div>
-    <div class="htip">💡 <b>เคล็ดลับ:</b> กะดึก 22:00–07:00 นับเป็นของวันที่เริ่มกะ · ถ้ามาก่อนเวลาเลือกกะถัดไปได้ · พิมพ์ "ช่วยเหลือ" ในแชต LINE ก็เปิดคู่มือได้</div>
+    <div class="htip">💡 <b>เคล็ดลับ:</b> กะที่ข้ามเที่ยงคืน (กลางคืน 12 ชม. / ดึก) นับเป็นของวันที่เริ่มกะ · ถ้ามาก่อนเวลาเลือกกะถัดไปได้ · พิมพ์ "ช่วยเหลือ" ในแชต LINE ก็เปิดคู่มือได้</div>
     <div class="card"><div class="lbl">📞 ติดต่อ</div>
       <div class="hcontact"><div class="hav">👤</div><div><div style="font-weight:600">หัวหน้าช่าง (ผู้จัดการเวร)</div><div style="font-size:12.5px;color:#6B7A90">โทร 062-628-6164</div></div></div>
       <div class="hcontact"><div class="hav">🛡️</div><div><div style="font-weight:600">ห้อง Security Control</div><div style="font-size:12.5px;color:#6B7A90">ต่อ 8308</div></div></div>
@@ -487,7 +487,9 @@
     <div class="hh-tabs" id="hhTabs">
       <button class="hhtab on" data-s="all" onclick="hhSetShift('all')">ทั้งหมด</button>
       <button class="hhtab" data-s="morning" onclick="hhSetShift('morning')">🌅 เช้า</button>
-      <button class="hhtab" data-s="afternoon" onclick="hhSetShift('afternoon')">☀️ บ่าย</button>
+      <button class="hhtab" data-s="day12" onclick="hhSetShift('day12')">☀️ กลางวัน 12 ชม.</button>
+      <button class="hhtab" data-s="afternoon" onclick="hhSetShift('afternoon')">🌇 บ่าย</button>
+      <button class="hhtab" data-s="night12" onclick="hhSetShift('night12')">🌃 กลางคืน 12 ชม.</button>
       <button class="hhtab" data-s="night" onclick="hhSetShift('night')">🌙 ดึก</button>
     </div>
     <div id="hhList" class="hh-list"></div>
@@ -497,7 +499,7 @@
     <div style="padding:16px;">
       <div class="sw-card"><div class="sw-lbl">📅 วันที่</div><input id="swDate" type="text" readonly></div>
       <div class="sw-card"><div class="sw-lbl">กะปัจจุบัน</div><div id="swFrom" class="sw-from">-</div></div>
-      <div class="sw-card"><div class="sw-lbl">ขอเปลี่ยนเป็นกะ</div><div class="sw-segs" id="swSegs"><button class="swseg" data-s="morning" onclick="swapSet('morning')">🌅 เช้า</button><button class="swseg" data-s="afternoon" onclick="swapSet('afternoon')">☀️ บ่าย</button><button class="swseg" data-s="night" onclick="swapSet('night')">🌙 ดึก</button></div></div>
+      <div class="sw-card"><div class="sw-lbl">ขอเปลี่ยนเป็นกะ</div><div class="sw-segs" id="swSegs"><button class="swseg" data-s="morning" onclick="swapSet('morning')">🌅 เช้า</button><button class="swseg" data-s="day12" onclick="swapSet('day12')">☀️ กลางวัน 12 ชม.</button><button class="swseg" data-s="afternoon" onclick="swapSet('afternoon')">🌇 บ่าย</button><button class="swseg" data-s="night12" onclick="swapSet('night12')">🌃 กลางคืน 12 ชม.</button><button class="swseg" data-s="night" onclick="swapSet('night')">🌙 ดึก</button></div></div>
       <div class="sw-card"><div class="sw-lbl">📝 เหตุผล</div><textarea id="swReason" placeholder="เช่น ติดธุระครอบครัว..."></textarea></div>
       <button id="swBtn" class="btn btn-primary" onclick="submitSwap()" style="width:100%;">📤 ส่งคำขอเปลี่ยนกะ</button>
     </div>
@@ -639,7 +641,7 @@
       <div class="reccard"><div class="recfl">📸 แนบรูป (ไม่บังคับ) — กล้องหรือแกลเลอรี</div><div class="thmbs" id="cpThumbs"></div><label class="addph" style="margin-top:8px;">＋<input multiple type="file" accept="image/*" style="display:none;" onchange="cpPick(this)"></label></div>
       <div id="ovWrap" style="display:none;">
         <div class="reccard">
-          <div class="recttl">🌙 รถจอดค้างคืน (เฉพาะกะดึก)</div>
+          <div class="recttl">🌙 รถจอดค้างคืน (กะกลางคืน 12 ชม. / กะดึก)</div>
           <div style="font-size:11px;color:#888;margin:-4px 0 10px;">ใส่ทีละคัน · ทะเบียน + รูป บังคับทุกคัน · แก้ไข/ลบได้</div>
           <div id="ovList"></div>
           <button class="recbtn" style="background:#5a6172;margin:6px 0 12px;" onclick="ovConfirmNone()">✓ คืนนี้ไม่มีรถจอดค้างคืน</button>
@@ -1031,11 +1033,19 @@ let userProfile = null;
 let guardInfo = null;
 let appConfig = null;
 let currentShift = null;
-const SHIFT_DEFS = { midday: { id:'midday', label:'กะกลางวัน', icon:'🌤️', start:11, end:20 }, evening: { id:'evening', label:'กะค่ำ', icon:'🌆', start:14, end:23 }, midday: { id:'midday', label:'กะกลางวัน', icon:'🌤️', start:11, end:20 }, evening: { id:'evening', label:'กะค่ำ', icon:'🌆', start:14, end:23 },
-  morning:   { id:'morning',   label:'กะเช้า',  icon:'🌅', start:7,  end:16 },
-  afternoon: { id:'afternoon', label:'กะบ่าย', icon:'☀️', start:13, end:22 },
-  night:     { id:'night',     label:'กะดึก',  icon:'🌙', start:22, end:7  },
+const SHIFT_DEFS = {
+  morning:   { id:'morning',   label:'กะเช้า',  icon:'🌅', start:7,  end:16, count:12 },
+  day12:     { id:'day12',     label:'กะกลางวัน 12 ชม.', icon:'☀️', start:7, end:19, count:16 },
+  afternoon: { id:'afternoon', label:'กะบ่าย', icon:'🌇', start:13, end:22, count:12 },
+  night12:   { id:'night12',   label:'กะกลางคืน 12 ชม.', icon:'🌃', start:19, end:7, count:24, overnightCars:true },
+  night:     { id:'night',     label:'กะดึก',  icon:'🌙', start:22, end:7, count:24, overnightCars:true },
+  /* retired — only for showing old records */
+  midday:    { id:'midday',    label:'กะกลางวัน (เดิม)', icon:'🌤️', start:11, end:20, retired:true },
+  evening:   { id:'evening',   label:'กะค่ำ (เดิม)', icon:'🌆', start:14, end:23, retired:true },
 };
+var SHIFT_ORDER = ['morning','day12','afternoon','night12','night'];
+function _isOvernightShift(id){ return !!(SHIFT_DEFS[id] && SHIFT_DEFS[id].overnightCars); }
+function _inShiftNow(id){ var d=SHIFT_DEFS[id]; if(!d) return false; var h=_bkkParts().h; return d.start<d.end ? (h>=d.start && h<d.end) : (h>=d.start || h<d.end); }
 // สร้าง checkedIn จาก history โดยกรองตามกะที่กดเข้างานจริง
 // (กัน backend คืน checkedIn ตามกะของเวลาปัจจุบัน ซึ่งอาจไม่ตรงกะที่เจ้าหน้าที่อยู่)
 function _ciFromHistory(hist, shiftId, backendCI){
@@ -2102,8 +2112,10 @@ function showClockInButton() {
   const autoId = (currentShift && currentShift.id) || 'morning';
   if (!window.__selectedShiftId) window.__selectedShiftId = autoId;
   const shifts = [
-    { id: 'morning',   icon: '🌅', label: 'กะเช้า',  time: '07:00-16:00' }, { id: 'midday', icon: '🌤️', label: 'กะกลางวัน', time: '11:00-20:00' }, { id: 'midday', icon: '🌤️', label: 'กะกลางวัน', time: '11:00-20:00' },
-    { id: 'afternoon', icon: '☀️', label: 'กะบ่าย',  time: '13:00-22:00' }, { id: 'evening', icon: '🌆', label: 'กะค่ำ', time: '14:00-23:00' }, { id: 'evening', icon: '🌆', label: 'กะค่ำ', time: '14:00-23:00' },
+    { id: 'morning',   icon: '🌅', label: 'กะเช้า',  time: '07:00-16:00' },
+    { id: 'day12',     icon: '☀️', label: 'กะกลางวัน 12 ชม.', time: '07:00-19:00' },
+    { id: 'afternoon', icon: '🌇', label: 'กะบ่าย',  time: '13:00-22:00' },
+    { id: 'night12',   icon: '🌃', label: 'กะกลางคืน 12 ชม.', time: '19:00-07:00' },
     { id: 'night',     icon: '🌙', label: 'กะดึก',  time: '22:00-07:00' },
   ];
   const sel = window.__selectedShiftId;
@@ -2119,7 +2131,7 @@ function showClockInButton() {
   }).join('');
   card.innerHTML =
     '<div style="font-size:13px;opacity:0.9;margin-bottom:8px;">เลือกกะที่จะเข้างาน</div>' +
-    '<div style="display:flex;gap:6px;margin-bottom:12px;">' + btnHtml + '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">' + btnHtml + '</div>' +
     '<div id="clockInBtn" style="font-size:18px;font-weight:600;padding:10px;background:rgba(0,0,0,0.2);border-radius:10px;cursor:pointer;">🕐 บันทึกเข้างาน</div>';
   // Bind shift buttons
   card.querySelectorAll('.shift-pick').forEach(function (b) {
@@ -2157,14 +2169,14 @@ async function renderClockInScreen(){
   } else {
     var nowShift=_guessShiftByTime();
     if(!window.__ciSel) window.__ciSel=(att&&att.shift)||nowShift;
-    var ids=['morning','midday','afternoon','evening','night'];
-    var btns=ids.map(function(id){ var sd=(SHIFT_DEFS&&SHIFT_DEFS[id])||{}; var sel=(window.__ciSel===id); var now=(nowShift===id);
+    var ids=SHIFT_ORDER;
+    var btns=ids.map(function(id){ var sd=(SHIFT_DEFS&&SHIFT_DEFS[id])||{}; var sel=(window.__ciSel===id); var now=_inShiftNow(id);
       return '<div onclick="ciPick(\''+id+'\')" style="flex:1;border:2px solid '+(sel?'#1abc9c':'#e3e6ee')+';border-radius:13px;padding:14px 6px;text-align:center;background:'+(sel?'#eafaf5':'#fafbfc')+';position:relative;cursor:pointer;">'
         +(now?'<div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#1abc9c;color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:9px;white-space:nowrap;">• ปัจจุบัน</div>':'')
         +'<div style="font-size:24px;">'+(sd.icon||'')+'</div><div style="font-size:13px;font-weight:700;margin-top:5px;color:'+(sel?'#1abc9c':'#16244a')+';">'+(sd.label||id)+'</div><div style="font-size:10px;color:#8b8fa3;margin-top:2px;">'+String(sd.start).padStart(2,'0')+':00–'+String(sd.end).padStart(2,'0')+':00</div></div>';
     }).join('');
     body.innerHTML='<div style="font-size:13px;color:#56607a;font-weight:600;margin-bottom:12px;">เลือกกะที่จะเข้างาน</div>'
-      +'<div style="display:flex;gap:8px;margin-bottom:16px;">'+btns+'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;margin-bottom:16px;padding-top:6px;">'+btns+'</div>'
       +'<button id="ciSaveBtn" onclick="ciDoClockIn()" style="width:100%;padding:18px;border-radius:14px;border:none;font-size:18px;font-weight:800;color:#fff;background:linear-gradient(135deg,#3f639c,#15315a);box-shadow:0 4px 12px rgba(21,49,90,.3);">🕐 บันทึกเข้างาน</button>'
       +((att&&att.clockedIn)?'<button onclick="window.__ciForcePick=false;renderClockInScreen();" style="width:100%;margin-top:9px;padding:11px;border-radius:11px;border:1.5px solid #d0d4dd;background:#fff;color:#56607a;font-weight:700;">‹ กลับ (ไม่เปลี่ยนกะ)</button>':'');
   }
@@ -2173,8 +2185,7 @@ function ciPick(id){ window.__ciSel=id; window.__selectedShiftId=id; renderClock
 function ciReopen(){ window.__ciForcePick=true; window.__ciSel=_guessShiftByTime(); renderClockInScreen(); }
 async function ciDoClockIn(){
   var shiftId=window.__ciSel||_guessShiftByTime();
-  var nowShift=_guessShiftByTime();
-  if(shiftId!==nowShift){
+  if(!_inShiftNow(shiftId)){
     var sd=(SHIFT_DEFS&&SHIFT_DEFS[shiftId])||{}; var p=_bkkParts(); var ns=String(p.h).padStart(2,'0')+':'+String(p.mi).padStart(2,'0');
     var ok=await _confirm('⚠️ กะที่เลือก: '+(sd.label||shiftId)+'\nไม่ตรงกับเวลาปัจจุบัน ('+ns+' น.)\n\nยืนยันเข้ากะนี้หรือไม่?'); if(!ok) return;
   }
@@ -2232,7 +2243,7 @@ async function loadHandover() {
       const banner = document.getElementById('handoverBanner');
       const list = document.getElementById('handoverList');
       list.innerHTML = r.items.map(function(h) {
-        const fromShiftLabel = h.fromShift === 'morning' ? 'กะเช้า' : h.fromShift === 'afternoon' ? 'กะบ่าย' : 'กะดึก';
+        const fromShiftLabel = (SHIFT_DEFS[h.fromShift] && SHIFT_DEFS[h.fromShift].label) || 'กะดึก';
         const safeId = h.id.replace(/[^a-zA-Z0-9]/g, '_');
         return '<div style="padding:8px;background:white;border-radius:8px;margin-bottom:6px;" id="ho_'+safeId+'">' +
           '<div style="font-size:11px;color:#666;">จาก ' + fromShiftLabel + ' • ' + _esc(h.fromGuardName) + ' • ' + _esc(h.createdAt) + '</div>' +
@@ -2446,7 +2457,7 @@ var HO_STEPS=[
 {key:'others',t:'📝 อื่นๆ / หมายเหตุ',d:'ไม่บังคับ',none:'ข้าม',ph:'หมายเหตุเพิ่มเติม',optional:true}
 ];
 var HO_d={},HO_i=0,HO_A=[];
-function hoIsNight(){return (typeof currentShift!=='undefined'&&currentShift&&currentShift.id==='night')||(typeof _shiftId!=='undefined'&&_shiftId==='night');}
+function hoIsNight(){ try{ return _isOvernightShift((typeof currentShift!=='undefined'&&currentShift&&currentShift.id)||_shiftId()); }catch(e){ return false; } }
 function openHoWizard(){HO_d={};HO_i=0;HO_A=HO_STEPS.filter(function(s){return !(s.nightOnly&&!hoIsNight());});hoBuildDom();document.getElementById('hoWizOverlay').style.display='flex';hoRender();}
 function hoMk(tag,css,txt){var e=document.createElement(tag);if(css)e.style.cssText=css;if(txt!=null)e.textContent=txt;return e;}
 function hoBuildDom(){
@@ -2523,7 +2534,7 @@ __reportMark('endshift');     const r = await api('endPatrol', { userId: userPro
         document.getElementById('reportedLink').style.display = 'none';
       }
       showToast('✓ ส่งรายงานสำเร็จ — Manager ได้รับแล้ว', 'success');
-      if (currentShift && currentShift.id === 'night') { promptDailyAfterNight(); }
+      if (currentShift && _isOvernightShift(currentShift.id)) { setTimeout(function(){ showToast('📑 รายงานประจำวันจะส่งเข้าไลน์อัตโนมัติในไม่กี่นาที','success'); }, 2500); }
     } else {
       showToast('❌ ' + (r.error || 'ผิดพลาด'), 'error');
       document.getElementById('endPatrolBtn').textContent = '🏁 จบกะ + ส่งรายงาน';
@@ -2581,8 +2592,7 @@ async function doClockIn() {
   const shiftId = window.__selectedShiftId || (currentShift && currentShift.id);
   // กันเข้ากะผิด: เตือนถ้ากะที่เลือกไม่ตรงเวลาปัจจุบัน (ยังเข้าได้ถ้ายืนยัน — รองรับเข้ากะล่วงหน้า)
   try {
-    var _nowShift = _guessShiftByTime();
-    if (shiftId && _nowShift && shiftId !== _nowShift) {
+    if (shiftId && !_inShiftNow(shiftId)) {
       var _p=_bkkParts(); var _nowStr=String(_p.h).padStart(2,'0')+':'+String(_p.mi).padStart(2,'0');
       var _sd=(window.SHIFT_DEFS && SHIFT_DEFS[shiftId])||{};
       var _rng=(_sd.start!=null?String(_sd.start).padStart(2,'0')+':00':'')+'–'+(_sd.end!=null?String(_sd.end).padStart(2,'0')+':00':'');
@@ -2896,7 +2906,7 @@ async function showCarPark(){ _hideAllMain(); var s=document.getElementById('cpS
   try{ var r=await api('getCarParkToday',{shift:_shiftId(),userId:_uid()}); var recs=(r&&r.records)||[];
     if(recs.length){ var last=recs[recs.length-1]; document.getElementById('cpAround').textContent=last.carsAround||0; document.getElementById('cpLift').textContent=last.carsLift||0; document.getElementById('cpMoto').textContent=last.motorcycles||0; CP_photos=(last.photos||[]).slice(); _renderThumbs(CP_photos,'cpThumbs'); var sb=document.getElementById('cpSubmitBtn'); if(sb)sb.textContent='💾 อัปเดต Car Park'; }
   }catch(e){}
-  var ow=document.getElementById('ovWrap'); var isNight=(_shiftId()==='night'); if(ow)ow.style.display=isNight?'block':'none'; if(isNight){ OV_EDIT_ROW=0; OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); document.getElementById('ovSubmitBtn').textContent='➕ เพิ่มรถคันนี้'; ovTypeChange(); ovLoad(); }
+  var ow=document.getElementById('ovWrap'); var isNight=_isOvernightShift(_shiftId()); if(ow)ow.style.display=isNight?'block':'none'; if(isNight){ OV_EDIT_ROW=0; OV_photos=[]; _renderThumbs(OV_photos,'ovThumbs'); document.getElementById('ovSubmitBtn').textContent='➕ เพิ่มรถคันนี้'; ovTypeChange(); ovLoad(); }
 }
 function cpStep(id,d){ var el=document.getElementById(id); var v=Math.max(0,(parseInt(el.textContent,10)||0)+d); el.textContent=v; cpScheduleSave(); }
 async function cpPick(inp){ await _recPick(inp, CP_photos, 'cpThumbs', 10); cpScheduleSave(); }
@@ -3030,7 +3040,7 @@ async function slLoad(){
 function slCardHtml(e){
   var open=e.status==='open';
   var badge=open?'<span style="background:#FAEEDA;color:#8a5a00;font-size:11px;padding:2px 8px;border-radius:7px;font-weight:600;">⚑ ติดตามต่อ</span>':'<span style="background:#E3F4EA;color:#1B7A4B;font-size:11px;padding:2px 8px;border-radius:7px;font-weight:600;">✓ ปิดแล้ว</span>';
-  var shTag=(e.shift==='morning'?'เช้า':e.shift==='afternoon'?'บ่าย':e.shift==='night'?'ดึก':(e.shift||''));
+  var shTag=((SHIFT_DEFS[e.shift]&&SHIFT_DEFS[e.shift].label)||('กะ'+(e.shift||''))).replace(/^กะ/,'');
   var meta='<span style="font-size:11px;color:#556;background:#eef2f7;padding:1px 7px;border-radius:6px;">กะ'+shTag+' · '+_esc(e.userName||'')+(e.carried?' · ยกมา '+_esc(e.date):'')+'</span>';
   var acts='';
   if(open && (e.mine||SL_isMgr)){ acts+='<button onclick="slClose(\''+e.logId+'\')" style="border:1.5px solid #1B7A4B;background:#fff;color:#1B7A4B;border-radius:7px;font-size:12px;font-weight:600;padding:4px 9px;cursor:pointer;font-family:inherit;">ปิดจ๊อบ</button>'; }
@@ -3068,7 +3078,7 @@ function _bkkParts(){
 function _todayStr(){var p=_bkkParts();return p.y+'-'+String(p.mo).padStart(2,'0')+'-'+String(p.d).padStart(2,'0');}
 function _thMonth(m){return ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'][m];}
 function _fmtTh(ds){var p=String(ds).split('-');if(p.length!==3)return ds;return parseInt(p[2],10)+' '+_thMonth(parseInt(p[1],10)-1)+' '+p[0];}
-function _shLabel(id){return {midday:'🌤️ กะกลางวัน',evening:'🌆 กะค่ำ',midday:'🌤️ กะกลางวัน',evening:'🌆 กะค่ำ',morning:'🌅 กะเช้า',afternoon:'☀️ กะบ่าย',night:'🌙 กะดึก'}[id]||id;}
+function _shLabel(id){ var d=SHIFT_DEFS[id]; return d ? (d.icon+' '+d.label) : id; }
 var hhDate, hhShift='all', hhData=[];
 function showHandoverHist(){_hideAllMain();var s=document.getElementById('handoverHistScreen');if(s)s.style.display='block';window.scrollTo(0,0);hhDate=_todayStr();hhShift='all';hhRenderTabs();loadHandoverHist();}
 function hhRenderTabs(){document.querySelectorAll('#hhTabs .hhtab').forEach(function(t){t.classList.toggle('on',t.getAttribute('data-s')===hhShift);});}
