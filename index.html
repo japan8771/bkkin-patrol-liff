@@ -2519,7 +2519,7 @@ async function hoFinish(){
  HO_d.patrol=done+'/'+tot+' จุด'+(pnote?(' · '+pnote):(tot>0&&done>=tot?' ครบ':''));
  ov.style.display='none';
  try{await doEndPatrol();}catch(e){}
- try{await api('submitHandoverV2',{userId:(typeof userProfile!=='undefined'&&userProfile?userProfile.userId:''),fromShift:(typeof _shiftId!=='undefined'?_shiftId:''),sections:HO_d,reportUrl:(window.__lastReportUrl||'')},true);}catch(e){}
+ try{await api('submitHandoverV2',{userId:(typeof userProfile!=='undefined'&&userProfile?userProfile.userId:''),fromShift:(function(){ try{ return (typeof currentShift!=='undefined'&&currentShift&&currentShift.id)||_shiftId(); }catch(e){ return ''; } })(),sections:HO_d,reportUrl:(window.__lastReportUrl||'')},true);}catch(e){}
 }
 /* ===== end Handover Wizard ===== */
 
